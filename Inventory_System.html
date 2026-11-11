@@ -69,7 +69,7 @@ tr:hover td{background:#fafbfe}
 </style>
 </head>
 <body>
-<header><h1>📦 Inventory System</h1><small>Region Property • Laboratory Equipment • Inventory Count Form • Property Stickers</small></header>
+<header><h1>📦 Inventory System</h1><span id="syncb" class="tag" style="margin-left:auto"></span><small>Region Property • Laboratory Equipment • Inventory Count Form • Property Stickers</small></header>
 <nav id="nav"></nav>
 <main id="main"></main>
 <div class="modal" id="modal"><div class="mb" id="mb"></div></div>
@@ -110,7 +110,7 @@ const TABLE_COLS={region:['propNo','accountable','section','endUser','category',
 const KEY='inventory_system_v1';
 let S={region:[],lab:[],master:JSON.parse(JSON.stringify(MASTER_DEFAULT)),seq:1};
 try{const x=JSON.parse(localStorage.getItem(KEY)||'null');if(x)S=Object.assign(S,x)}catch(e){}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}schedulePush()};
 let tab='dash';const filt={region:{q:'',sec:'',cond:''},lab:{q:'',sec:'',cond:''}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=v=>parseFloat(v)||0;
@@ -118,11 +118,11 @@ const money=v=>'₱'+num(v).toLocaleString('en-PH',{minimumFractionDigits:2,maxi
 const fld=(m,k)=>MODS[m].fields.find(f=>f.k===k);
 
 /* ========= NAV ========= */
-const TABS=[['dash','Dashboard'],['region','Region Property'],['lab','Lab Equipment'],['icf','Inventory Count Form'],['stk','Property Stickers'],['master','Master Data']];
+const TABS=[['dash','Dashboard'],['region','Region Property'],['lab','Lab Equipment'],['icf','Inventory Count Form'],['stk','Property Stickers'],['master','Master Data'],['sheet','Google Sheet']];
 function renderNav(){nav.innerHTML=TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" onclick="go('${k}')">${l}</button>`).join('')+
  `<span class="sp"></span><button class="b" onclick="exportXlsx()">⬇ Export Excel</button><button class="b" onclick="importPick()">⬆ Import Excel</button><input type="file" id="imp" accept=".xlsx,.xls,.csv" class="hide" onchange="importXlsx(this)">`}
 function go(t){tab=t;render()}
-function render(){renderNav();({dash:vDash,region:()=>vList('region'),lab:()=>vList('lab'),icf:vIcf,stk:vStk,master:vMaster})[tab]();}
+function render(){renderNav();({dash:vDash,region:()=>vList('region'),lab:()=>vList('lab'),icf:vIcf,stk:vStk,master:vMaster,sheet:vSheet})[tab]();}
 
 /* ========= DASHBOARD ========= */
 function vDash(){
@@ -288,8 +288,62 @@ function importXlsx(inp){
   save();inp.value='';render();alert(`Imported: ${added} item(s).`);
  };rd.readAsArrayBuffer(file);
 }
+
+/* ========= GOOGLE SHEET SYNC ========= */
+S.cfg=S.cfg||{url:'',token:''};
+let sync={state:'off',msg:'',pulled:false,t:null};
+const nrm=s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,'');
+function badge(){const b=document.getElementById('syncb');if(!b)return;
+ const m={off:['Local only','#eef1f7','#6b7488'],pending:['Saving…','#fdf0d5','#b7791f'],ok:['Synced ✔','#dff5ec','#12805c'],err:['Sync error','#fbe3e0','#c0392b'],load:['Loading…','#e8efff','#1f5eff']}[sync.state];
+ b.textContent='Google Sheet: '+m[0];b.style.background=m[1];b.style.color=m[2];b.title=sync.msg}
+function toRow(m,r){return Object.fromEntries(MODS[m].fields.filter(f=>f.t!=='calc').map(f=>[f.l,f.t==='num'?(r[f.k]===''||r[f.k]==null?'':num(r[f.k])):(r[f.k]??'')]))}
+function fromRow(m,row){const map={};Object.keys(row).forEach(h=>map[nrm(h)]=row[h]);
+ const d={id:'i'+(S.seq++)+Date.now().toString(36)};
+ MODS[m].fields.forEach(f=>{const v=map[nrm(f.l)];d[f.k]=v==null?'':String(v).trim()});
+ d.total=num(d.unitCost)*num(d.qty);return d}
+const apiUrl=a=>S.cfg.url+(S.cfg.url.includes('?')?'&':'?')+'action='+a+'&token='+encodeURIComponent(S.cfg.token);
+async function pull(auto){
+ if(!S.cfg.url)return;sync.state='load';badge();
+ try{
+  const j=await (await fetch(apiUrl('all'))).json();
+  if(j.error)throw new Error(j.error);
+  const remoteN=(j.region||[]).length+(j.lab||[]).length;
+  if(!remoteN&&(S.region.length+S.lab.length)>0){
+   if(confirm('The Google Sheet is empty but you have local data. Upload local data to the Sheet?')){sync.pulled=true;await push();return}
+   sync.pulled=true;sync.state='ok';badge();return}
+  ['region','lab'].forEach(m=>{S[m]=(j[m]||[]).map(r=>fromRow(m,r))});
+  MASTER_DEFS.forEach(([k,l])=>{const v=(j.master||{})[l];if(v&&v.length)S.master[k]=v});
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  sync.pulled=true;sync.state='ok';sync.msg='Loaded '+new Date().toLocaleTimeString();badge();render();
+ }catch(e){sync.state='err';sync.msg=String(e.message||e);badge();if(!auto)alert('Could not load from Google Sheet:\n'+sync.msg)}
+}
+async function push(){
+ if(!S.cfg.url||!sync.pulled)return;
+ try{
+  const body={token:S.cfg.token,region:S.region.map(r=>toRow('region',r)),lab:S.lab.map(r=>toRow('lab',r)),
+   master:Object.fromEntries(MASTER_DEFS.map(([k,l])=>[l,S.master[k]]))};
+  const j=await (await fetch(S.cfg.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)})).json();
+  if(j.error)throw new Error(j.error);
+  sync.state='ok';sync.msg='Saved '+new Date().toLocaleTimeString();
+ }catch(e){sync.state='err';sync.msg=String(e.message||e)}
+ badge();
+}
+function schedulePush(){if(!S.cfg||!S.cfg.url||!sync.pulled)return;clearTimeout(sync.t);sync.state='pending';badge();sync.t=setTimeout(push,1500)}
+function vSheet(){
+ main.innerHTML=`<div class="card" style="max-width:760px"><h2 style="margin-top:0">Google Sheet Connection</h2>
+ <p style="color:var(--mute)">Paste the <b>Web app URL</b> from your Apps Script deployment and the same <b>password (TOKEN)</b> you set in Code.gs.</p>
+ <label style="font-weight:600;font-size:12px">Web app URL</label><input id="cu" placeholder="https://script.google.com/macros/s/.../exec" value="${esc(S.cfg.url)}">
+ <label style="font-weight:600;font-size:12px;display:block;margin-top:10px">Password (TOKEN)</label><input id="ct" type="password" value="${esc(S.cfg.token)}">
+ <div class="mf" style="justify-content:flex-start"><button class="b p" onclick="saveCfg()">💾 Save &amp; Connect</button>
+ <button class="b" onclick="pull()">⬇ Load from Sheet</button><button class="b" onclick="sync.pulled=true;push().then(()=>alert(sync.state==='ok'?'Uploaded to Google Sheet ✔':'Failed: '+sync.msg))">⬆ Upload to Sheet</button>
+ <button class="b d" onclick="disconnect()">Disconnect</button></div>
+ <p style="color:var(--mute);margin-bottom:0">Once connected: data loads from the Sheet when you open the page, and every change is saved to the Sheet automatically.</p></div>`}
+function saveCfg(){S.cfg.url=document.getElementById('cu').value.trim();S.cfg.token=document.getElementById('ct').value.trim();
+ try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}sync.pulled=false;pull()}
+function disconnect(){S.cfg={url:'',token:''};sync={state:'off',msg:'',pulled:false,t:null};try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}badge();vSheet()}
+
 modal.addEventListener('click',e=>{if(e.target===modal)closeM()});
-render();
+render();badge();if(S.cfg&&S.cfg.url)pull(true);
 </script>
 </body>
 </html>
