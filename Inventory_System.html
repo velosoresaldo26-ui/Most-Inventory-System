@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inventory System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--ink:#1d2433;--mute:#6b7488;--line:#dfe3ec;--pri:#1f5eff;--pri2:#e8efff;--ok:#12805c;--warn:#b7791f;--bad:#c0392b}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:#14213d;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;font-weight:650}
+header small{color:#aeb8d0}
+nav{display:flex;gap:4px;flex-wrap:wrap;background:#fff;border-bottom:1px solid var(--line);padding:8px 16px;position:sticky;top:0;z-index:5}
+nav button{border:0;background:none;padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit;color:var(--mute);font-weight:550}
+nav button.on{background:var(--pri2);color:var(--pri)}
+main{padding:18px;max-width:1500px;margin:auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.stat b{display:block;font-size:24px;margin-top:2px}.stat span{color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+input,select,textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);width:100%}
+.bar input,.bar select{width:auto;min-width:150px}
+button.b{border:1px solid var(--line);background:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit;font-weight:550}
+button.b:hover{background:#f1f3f8}
+button.p{background:var(--pri);color:#fff;border-color:var(--pri)}button.p:hover{background:#174fd9}
+button.d{color:var(--bad)}
+.sp{flex:1}
+.tw{overflow:auto;border:1px solid var(--line);border-radius:10px;max-height:68vh}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{background:#eef1f7;position:sticky;top:0;font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--mute)}
+td.n,th.n{text-align:right}
+tr:hover td{background:#fafbfe}
+.tag{padding:2px 8px;border-radius:99px;font-size:12px;background:#eef1f7}
+.tag.Serviceable{background:#dff5ec;color:var(--ok)}.tag.Unserviceable,.tag.Lost{background:#fbe3e0;color:var(--bad)}.tag.For{background:#fdf0d5;color:var(--warn)}
+.modal{position:fixed;inset:0;background:#0007;display:none;align-items:flex-start;justify-content:center;padding:30px 12px;overflow:auto;z-index:20}
+.modal.show{display:flex}
+.mb{background:#fff;border-radius:14px;padding:20px;width:min(900px,100%)}
+.mb h3{margin:0 0 14px}
+.fg{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.fg label{font-size:12px;color:var(--mute);font-weight:600;display:block;margin-bottom:3px}
+.mf{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.empty{text-align:center;color:var(--mute);padding:34px}
+.hide{display:none!important}
+.ml{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.ml textarea{height:150px;font-size:13px}
+.ml label{font-weight:600;font-size:13px}
+/* print forms */
+.form{background:#fff;color:#000;padding:20px;border:1px solid var(--line);font-family:Arial,sans-serif}
+.form h2,.form h3{text-align:center;margin:2px 0}
+.form .meta{display:flex;gap:24px;flex-wrap:wrap;margin:12px 0;font-size:13px}
+.form table{font-size:11px}.form th,.form td{border:1px solid #000;white-space:normal;padding:4px 5px;position:static;background:#fff;color:#000}
+.form th{background:#eee;text-align:center}
+.sig{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:30px;text-align:center;font-size:12px}
+.sig div div{border-top:1px solid #000;margin-top:34px;padding-top:4px;font-weight:700;min-height:20px}
+.stk{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.sticker{border:2px solid #000;padding:8px 10px;background:#fff;color:#000;font-size:12px;break-inside:avoid;font-family:Arial,sans-serif}
+.sticker .h{text-align:center;font-weight:700;border-bottom:1px solid #000;padding-bottom:4px;margin-bottom:5px}
+.sticker .no{font-size:18px;font-weight:800;text-align:center;letter-spacing:.04em;margin:4px 0}
+.sticker p{margin:2px 0}
+@media print{
+ header,nav,.noprint,.modal{display:none!important}
+ body{background:#fff}main{padding:0;max-width:none}
+ .card{border:0;padding:0;margin:0}.form{border:0;padding:0}
+ @page{size:landscape;margin:10mm}
+}
+</style>
+</head>
+<body>
+<header><h1>📦 Inventory System</h1><small>Region Property • Laboratory Equipment • Inventory Count Form • Property Stickers</small></header>
+<nav id="nav"></nav>
+<main id="main"></main>
+<div class="modal" id="modal"><div class="mb" id="mb"></div></div>
+
+<script>
+/* ========= CONFIG (galing sa columns ng Excel) ========= */
+const MASTER_DEFS=[
+ ['section','Division / Section'],['empStatus','Employment Status'],['category','Property Category'],['type','Type'],
+ ['sub','Sub-category'],['fund','Fund Cluster'],['permanent','Permanent Employee'],['cos','COS Employee'],
+ ['txType','Transaction Type'],['ics','ICS No. / ICS List'],['coa','COA Representative'],['status','Status'],
+ ['condition','Condition'],['uom','Unit of Measurement']];
+const MASTER_DEFAULT={
+ section:['MICROBIOLOGY LABORATORY'],empStatus:['Permanent','COS','Job Order'],category:['PPE','Semi-Expendable'],
+ type:[],sub:[],fund:['01 - Regular Agency Fund'],permanent:[],cos:[],txType:['Acquisition','Transfer','Donation','Reissuance'],
+ ics:[],coa:[],status:['Active','Transferred','Disposed'],
+ condition:['Serviceable','Unserviceable','For Repair','For Disposal','Lost'],uom:['unit','pc','set','box','lot']};
+const F=(k,l,t,list,extra)=>Object.assign({k,l,t:t||'text',list},extra||{});
+const COMMON=[
+ F('propNo','Property No'),F('accountable','Accountable','text','permanent'),F('section','Division / Section','text','section'),
+ F('empStatus','Employment Status','text','empStatus'),F('endUser','End User','text','permanent'),
+ F('category','Property Category','text','category'),F('sub','Sub-Category','text','sub'),F('article','Article / Item'),
+ F('description','Description','area'),F('propNumber','Property Number'),F('oldNo','Old Property Number'),
+ F('propOption','Property Option'),F('txType','Transaction Type','text','txType'),F('fund','Fund Cluster','text','fund'),
+ F('ics','ICS No.','text','ics'),F('uom','Unit of Measurement','text','uom'),
+ F('unitCost','Unit Cost','num'),F('qty','Quantity','num'),F('total','Total Cost','calc'),
+ F('condition','Condition','text','condition'),F('location','Location / Whereabouts'),
+ F('physical','Physical Count','num'),F('remarks','Remarks','area')];
+const MODS={
+ region:{name:'Region Property',group:'REGION PROPERTY',fields:COMMON,sheet:'Region Property'},
+ lab:{name:'Lab Equipment',group:'LABORATORY EQUIPMENT',sheet:'LABEQUIPT',
+  fields:[...COMMON.slice(0,1),F('status','Status','text','status'),...COMMON.slice(1,8),
+   ...COMMON.slice(8),F('life','Estimated Useful Life (Year)','num'),F('category2','Category')]}
+};
+const TABLE_COLS={region:['propNo','accountable','section','endUser','category','sub','article','description','propNumber','unitCost','qty','total','physical','condition'],
+ lab:['propNo','status','accountable','section','endUser','category','article','description','propNumber','unitCost','qty','total','physical','condition']};
+
+/* ========= STATE ========= */
+const KEY='inventory_system_v1';
+let S={region:[],lab:[],master:JSON.parse(JSON.stringify(MASTER_DEFAULT)),seq:1};
+try{const x=JSON.parse(localStorage.getItem(KEY)||'null');if(x)S=Object.assign(S,x)}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+let tab='dash';const filt={region:{q:'',sec:'',cond:''},lab:{q:'',sec:'',cond:''}};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>parseFloat(v)||0;
+const money=v=>'₱'+num(v).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fld=(m,k)=>MODS[m].fields.find(f=>f.k===k);
+
+/* ========= NAV ========= */
+const TABS=[['dash','Dashboard'],['region','Region Property'],['lab','Lab Equipment'],['icf','Inventory Count Form'],['stk','Property Stickers'],['master','Master Data']];
+function renderNav(){nav.innerHTML=TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" onclick="go('${k}')">${l}</button>`).join('')+
+ `<span class="sp"></span><button class="b" onclick="exportXlsx()">⬇ Export Excel</button><button class="b" onclick="importPick()">⬆ Import Excel</button><input type="file" id="imp" accept=".xlsx,.xls,.csv" class="hide" onchange="importXlsx(this)">`}
+function go(t){tab=t;render()}
+function render(){renderNav();({dash:vDash,region:()=>vList('region'),lab:()=>vList('lab'),icf:vIcf,stk:vStk,master:vMaster})[tab]();}
+
+/* ========= DASHBOARD ========= */
+function vDash(){
+ const all=[...S.region.map(r=>({...r,_m:'region'})),...S.lab.map(r=>({...r,_m:'lab'}))];
+ const tv=m=>S[m].reduce((a,r)=>a+num(r.total),0);
+ const var_=all.filter(r=>r.physical!==''&&r.physical!=null&&num(r.physical)!==num(r.qty)).length;
+ const byC={};all.forEach(r=>{const c=r.condition||'No condition';byC[c]=(byC[c]||0)+1});
+ const bySec={};all.forEach(r=>{const c=r.section||'No section';bySec[c]=(bySec[c]||0)+num(r.total)});
+ main.innerHTML=`<div class="grid">
+ <div class="card stat"><span>Region Property items</span><b>${S.region.length}</b></div>
+ <div class="card stat"><span>Lab Equipment items</span><b>${S.lab.length}</b></div>
+ <div class="card stat"><span>Total Value (Region)</span><b>${money(tv('region'))}</b></div>
+ <div class="card stat"><span>Total Value (Lab)</span><b>${money(tv('lab'))}</b></div>
+ <div class="card stat"><span>Count variances</span><b style="color:${var_?'var(--bad)':'var(--ok)'}">${var_}</b></div></div>
+ <div class="grid"><div class="card"><h3 style="margin-top:0">Per Condition</h3>${Object.keys(byC).length?Object.entries(byC).map(([k,v])=>`<p style="margin:6px 0"><span class="tag ${esc(k.split(' ')[0])}">${esc(k)}</span> &nbsp;<b>${v}</b></p>`).join(''):'<div class="empty">No data yet</div>'}</div>
+ <div class="card"><h3 style="margin-top:0">Value per Division / Section</h3>${Object.keys(bySec).length?Object.entries(bySec).map(([k,v])=>`<p style="margin:6px 0">${esc(k)} — <b>${money(v)}</b></p>`).join(''):'<div class="empty">No data yet</div>'}</div></div>
+ <div class="card"><b>How to use:</b> 1) Fill in <i>Master Data</i> first (dropdown lists). 2) Add items under <i>Region Property</i> or <i>Lab Equipment</i> (or import your Excel file). 3) Generate the <i>Inventory Count Form</i> and print it. 4) Print the <i>Property Stickers</i>. Data is saved in this browser only — use Export Excel for backups.</div>`;
+}
+
+/* ========= LIST ========= */
+function filtered(m){const f=filt[m];return S[m].filter(r=>{
+ if(f.sec&&r.section!==f.sec)return false;if(f.cond&&r.condition!==f.cond)return false;
+ return !f.q||Object.values(r).join(' ').toLowerCase().includes(f.q.toLowerCase())})}
+function vList(m){
+ const cols=TABLE_COLS[m],rows=filtered(m),f=filt[m];
+ const opt=(arr,v)=>'<option value="">All</option>'+arr.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('');
+ main.innerHTML=`<div class="card"><div class="bar">
+  <h2 style="margin:0">${MODS[m].name}</h2><span class="tag">${rows.length} / ${S[m].length}</span><span class="sp"></span>
+  <input placeholder="🔍 Search..." value="${esc(f.q)}" oninput="filt.${m}.q=this.value;listBody('${m}')" id="q_${m}">
+  <select onchange="filt.${m}.sec=this.value;listBody('${m}')" title="Division/Section">${opt(S.master.section,f.sec)}</select>
+  <select onchange="filt.${m}.cond=this.value;listBody('${m}')" title="Condition">${opt(S.master.condition,f.cond)}</select>
+  <button class="b p" onclick="edit('${m}')">＋ Add Item</button></div>
+  <div class="tw"><table><thead><tr>${cols.map(k=>`<th class="${['unitCost','qty','total','physical'].includes(k)?'n':''}">${fld(m,k).l}</th>`).join('')}<th></th></tr></thead><tbody id="lb_${m}"></tbody></table></div></div>`;
+ listBody(m);
+}
+function listBody(m){
+ const cols=TABLE_COLS[m],rows=filtered(m);
+ document.getElementById('lb_'+m).innerHTML=rows.length?rows.map(r=>`<tr>${cols.map(k=>{
+  let v=r[k];if(k==='unitCost'||k==='total')return`<td class="n">${money(v)}</td>`;
+  if(k==='qty'||k==='physical')return`<td class="n" ${k==='physical'&&v!==''&&v!=null&&num(v)!==num(r.qty)?'style="color:var(--bad);font-weight:700"':''}>${esc(v)}</td>`;
+  if(k==='condition'&&v)return`<td><span class="tag ${esc(String(v).split(' ')[0])}">${esc(v)}</span></td>`;
+  if(k==='description')return`<td title="${esc(v)}" style="max-width:260px;overflow:hidden;text-overflow:ellipsis">${esc(v)}</td>`;
+  return`<td>${esc(v)}</td>`}).join('')}<td><button class="b" onclick="edit('${m}','${r.id}')">✏️</button> <button class="b" onclick="dup('${m}','${r.id}')" title="Duplicate">⧉</button> <button class="b d" onclick="del('${m}','${r.id}')">🗑</button></td></tr>`).join('')
+  :`<tr><td colspan="${cols.length+1}" class="empty">No items yet. Click “＋ Add Item” or import your Excel file.</td></tr>`;
+}
+
+/* ========= ADD / EDIT ========= */
+function edit(m,id){
+ const r=id?S[m].find(x=>x.id===id):{};
+ const dl=MASTER_DEFS.map(([k])=>`<datalist id="dl_${k}">${S.master[k].map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`).join('');
+ mb.innerHTML=`<h3>${id?'Edit':'New'} ${MODS[m].name}</h3>${dl}<form id="fm" onsubmit="return saveRec(event,'${m}','${id||''}')"><div class="fg">`+
+ MODS[m].fields.map(f=>{
+  const v=r[f.k]??'';const L=`<label>${f.l}</label>`;
+  if(f.t==='calc')return`<div>${L}<input id="f_total" readonly value="${money(r.total||0)}"></div>`;
+  if(f.t==='area')return`<div style="grid-column:1/-1">${L}<textarea name="${f.k}" rows="2">${esc(v)}</textarea></div>`;
+  return`<div>${L}<input name="${f.k}" value="${esc(v)}" ${f.t==='num'?'type="number" step="any" min="0"':''} ${f.list?`list="dl_${f.list}"`:''} ${f.k==='unitCost'||f.k==='qty'?'oninput="calcT()"':''}></div>`}).join('')+
+ `</div><div class="mf"><button type="button" class="b" onclick="closeM()">Cancel</button><button class="b p">💾 Save</button></div></form>`;
+ modal.classList.add('show');
+}
+function calcT(){const f=fm.elements;document.getElementById('f_total').value=money(num(f.unitCost.value)*num(f.qty.value))}
+function closeM(){modal.classList.remove('show')}
+function saveRec(e,m,id){
+ e.preventDefault();const d={};
+ MODS[m].fields.forEach(f=>{if(f.t!=='calc')d[f.k]=fm.elements[f.k].value.trim()});
+ d.total=num(d.unitCost)*num(d.qty);
+ d.sub&&0;
+ if(id){Object.assign(S[m].find(x=>x.id===id),d)}else{d.id='i'+(S.seq++)+Date.now().toString(36);S[m].push(d)}
+ // auto-add new dropdown values sa Master Data
+ [['section','section'],['empStatus','empStatus'],['category','category'],['sub','sub'],['fund','fund'],['txType','txType'],['ics','ics'],['uom','uom'],['condition','condition'],['status','status'],['accountable','permanent']].forEach(([f,k])=>{
+  if(d[f]&&!S.master[k].includes(d[f]))S.master[k].push(d[f])});
+ save();closeM();render();return false;
+}
+function dup(m,id){const r={...S[m].find(x=>x.id===id),id:'i'+(S.seq++)+Date.now().toString(36)};S[m].push(r);save();render()}
+function del(m,id){if(confirm('Delete this item?')){S[m]=S[m].filter(x=>x.id!==id);save();render()}}
+
+/* ========= INVENTORY COUNT FORM ========= */
+let icf={m:'lab',sec:'',cat:'',coa:'',ppe:''};let sig={p:'',v:'',r:'',w:''};
+function vIcf(){
+ const secs=[...new Set(S[icf.m].map(r=>r.section).filter(Boolean))];
+ const rows=S[icf.m].filter(r=>(!icf.sec||r.section===icf.sec)&&(!icf.cat||r.category===icf.cat));
+ const cats=[...new Set(S[icf.m].map(r=>r.category).filter(Boolean))];
+ const lab=icf.m==='lab';
+ const opt=(a,v)=>'<option value="">All</option>'+a.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('');
+ main.innerHTML=`<div class="card noprint"><div class="bar">
+  <h2 style="margin:0">Inventory Count Form</h2><span class="sp"></span>
+  <select onchange="icf.m=this.value;icf.sec='';icf.cat='';vIcf()"><option value="lab" ${lab?'selected':''}>Laboratory Equipment</option><option value="region" ${!lab?'selected':''}>Region Property</option></select>
+  <select onchange="icf.sec=this.value;vIcf()" title="Division/Section">${opt(secs,icf.sec)}</select>
+  <select onchange="icf.cat=this.value;vIcf()" title="Category">${opt(cats,icf.cat)}</select>
+  <button class="b p" onclick="window.print()">🖨 Print</button></div>
+  <div class="bar"><input placeholder="PPE Account Group" value="${esc(icf.ppe)}" oninput="icf.ppe=this.value">
+  <input placeholder="Prepared by" value="${esc(sig.p)}" oninput="sig.p=this.value"><input placeholder="Verified by" value="${esc(sig.v)}" oninput="sig.v=this.value">
+  <input placeholder="Reviewed by (Chairman)" value="${esc(sig.r)}" oninput="sig.r=this.value">
+  <input placeholder="Witnessed by (COA)" list="dl_coa" value="${esc(sig.w)}" oninput="sig.w=this.value"><datalist id="dl_coa">${S.master.coa.map(x=>`<option>${esc(x)}</option>`).join('')}</datalist>
+  <small style="color:var(--mute)">Type the names, then print (they stay when you change the filter).</small></div></div>
+  <div class="form" id="icfprint"><h3>${lab?'MINISTRY OF SCIENCE AND TECHNOLOGY':''}</h3><h2>Inventory Count Form</h2>
+  <div class="meta"><span><b>PPE Account Group:</b> ${esc(icf.ppe||MODS[icf.m].group)}</span><span><b>Category:</b> ${esc(icf.cat||'PPE')}</span><span><b>Division / Section:</b> ${esc(icf.sec||'ALL')}</span><span style="margin-left:auto"><b>Sheet No.</b> ___ of ___</span></div>
+  <table><thead><tr><th>No.</th><th>Article/Item</th><th>Description</th><th>Old Prop. No.</th><th>New Prop. No.</th><th>Unit of Measurement</th><th>Unit Value</th><th>Qty. per Property Card</th><th>Qty. per Physical Count</th><th>Location / Whereabouts</th><th>Condition</th><th>Remarks</th>${lab?'':'<th>Property Category</th>'}</tr></thead><tbody>
+  ${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.article)}</td><td>${esc(r.description)}</td><td>${esc(r.oldNo)}</td><td>${esc(r.propNumber||r.propNo)}</td><td>${esc(r.uom)}</td><td style="text-align:right">${num(r.unitCost).toLocaleString('en-PH',{minimumFractionDigits:2})}</td><td style="text-align:center">${esc(r.qty)}</td><td style="text-align:center">${esc(r.physical)}</td><td>${esc(r.location)}</td><td>${esc(r.condition)}</td><td>${esc(r.remarks)}</td>${lab?'':`<td>${esc(r.category)}</td>`}</tr>`).join('')||`<tr><td colspan="13" style="text-align:center;padding:20px">No items for the selected filter</td></tr>`}
+  </tbody></table>
+  <div class="sig"><div>Prepared by:<div>${esc(sig.p)}</div>Print Name and Signature<br>Concerned Inventory<br>Committee Member</div>
+  <div>Verified by:<div>${esc(sig.v)}</div>Print Name and Signature<br>Concerned Inventory<br>Committee Member</div>
+  <div>Reviewed by:<div>${esc(sig.r)}</div>Print Name and Signature<br>Chairman, Inventory<br>Committee</div>
+  <div>Witnessed by:<div>${esc(sig.w)}</div>Print Name and Signature<br>COA Auditor / Representative</div></div></div>`;
+}
+
+/* ========= STICKERS ========= */
+let sk={m:'lab',sec:''};
+function vStk(){
+ const secs=[...new Set(S[sk.m].map(r=>r.section).filter(Boolean))];
+ const rows=S[sk.m].filter(r=>!sk.sec||r.section===sk.sec);
+ main.innerHTML=`<div class="card noprint"><div class="bar"><h2 style="margin:0">Property Stickers</h2><span class="sp"></span>
+  <select onchange="sk.m=this.value;sk.sec='';vStk()"><option value="lab" ${sk.m==='lab'?'selected':''}>Laboratory Equipment</option><option value="region" ${sk.m==='region'?'selected':''}>Region Property</option></select>
+  <select onchange="sk.sec=this.value;vStk()"><option value="">All Sections</option>${secs.map(x=>`<option ${x===sk.sec?'selected':''}>${esc(x)}</option>`).join('')}</select>
+  <button class="b p" onclick="window.print()">🖨 Print Stickers</button></div></div>
+  <div class="stk">${rows.map(r=>`<div class="sticker"><div class="h">PROPERTY STICKER — ${esc(MODS[sk.m].group)}</div>
+  <div class="no">${esc(r.propNumber||r.propNo||'—')}</div>
+  <p><b>Item:</b> ${esc(r.article||r.description)}</p><p><b>Desc:</b> ${esc((r.description||'').slice(0,90))}</p>
+  <p><b>Accountable:</b> ${esc(r.accountable)}</p><p><b>End User:</b> ${esc(r.endUser)}</p>
+  <p><b>Section:</b> ${esc(r.section)}</p><p><b>Old No.:</b> ${esc(r.oldNo)} &nbsp; <b>Cost:</b> ${money(r.unitCost)}</p></div>`).join('')||'<div class="card empty">No items</div>'}</div>`;
+}
+
+/* ========= MASTER DATA ========= */
+function vMaster(){
+ main.innerHTML=`<div class="card"><div class="bar"><h2 style="margin:0">Master Data (Dropdown Lists)</h2><span class="sp"></span><button class="b p" onclick="saveMaster()">💾 Save</button></div>
+ <p style="color:var(--mute);margin-top:0">One value per line. These appear as dropdown suggestions in the forms.</p>
+ <div class="ml">${MASTER_DEFS.map(([k,l])=>`<div><label>${l}</label><textarea id="m_${k}">${esc(S.master[k].join('\n'))}</textarea></div>`).join('')}</div></div>`;
+}
+function saveMaster(){MASTER_DEFS.forEach(([k])=>{S.master[k]=document.getElementById('m_'+k).value.split('\n').map(x=>x.trim()).filter(Boolean)});save();alert('Master Data saved ✔')}
+
+/* ========= EXCEL IMPORT / EXPORT ========= */
+function exportXlsx(){
+ if(!window.XLSX)return alert('Excel library could not be loaded (internet required).');
+ const wb=XLSX.utils.book_new();
+ Object.keys(MODS).forEach(m=>{
+  const fs=MODS[m].fields;
+  const rows=S[m].map(r=>Object.fromEntries(fs.map(f=>[f.l,f.t==='num'||f.t==='calc'?(r[f.k]===''||r[f.k]==null?'':num(r[f.k])):r[f.k]??''])));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows,{header:fs.map(f=>f.l)}),MODS[m].sheet);
+ });
+ const md=[];const mx=Math.max(...MASTER_DEFS.map(([k])=>S.master[k].length),1);
+ for(let i=0;i<mx;i++)md.push(Object.fromEntries(MASTER_DEFS.map(([k,l])=>[l,S.master[k][i]||''])));
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(md,{header:MASTER_DEFS.map(x=>x[1])}),'MasterData');
+ XLSX.writeFile(wb,'Inventory_System_Export.xlsx');
+}
+function importPick(){document.getElementById('imp').click()}
+function importXlsx(inp){
+ const file=inp.files[0];if(!file)return;if(!window.XLSX)return alert('Excel library could not be loaded.');
+ const rd=new FileReader();rd.onload=e=>{
+  const wb=XLSX.read(e.target.result,{type:'array'});let added=0;
+  Object.keys(MODS).forEach(m=>{
+   const ws=wb.Sheets[MODS[m].sheet]||(wb.SheetNames.length===1&&wb.Sheets[wb.SheetNames[0]]&&m==='region'?wb.Sheets[wb.SheetNames[0]]:null);if(!ws)return;
+   const norm=s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,'');
+   XLSX.utils.sheet_to_json(ws,{defval:''}).forEach(row=>{
+    const map={};Object.keys(row).forEach(h=>map[norm(h)]=row[h]);
+    const d={id:'i'+(S.seq++)+Date.now().toString(36)};
+    MODS[m].fields.forEach(f=>{let v=map[norm(f.l)];if(v===undefined&&f.k==='section')v=map.sectiondivition;d[f.k]=v==null?'':String(v).trim()});
+    if(Object.values(d).filter(Boolean).length<2)return;
+    d.total=num(d.unitCost)*num(d.qty);S[m].push(d);added++;
+   });
+  });
+  const mws=wb.Sheets['MasterData'];
+  if(mws){const rows=XLSX.utils.sheet_to_json(mws,{defval:''});MASTER_DEFS.forEach(([k,l])=>{
+   rows.forEach(r=>{const v=String(r[l]||'').trim();if(v&&!S.master[k].includes(v))S.master[k].push(v)})})}
+  save();inp.value='';render();alert(`Imported: ${added} item(s).`);
+ };rd.readAsArrayBuffer(file);
+}
+modal.addEventListener('click',e=>{if(e.target===modal)closeM()});
+render();
+</script>
+</body>
+</html>
