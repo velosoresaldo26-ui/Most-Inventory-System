@@ -296,7 +296,7 @@ function importXlsx(inp){
 }
 
 /* ========= LOGIN + GOOGLE SHEET ========= */
-const DEFAULT_URL='https://script.google.com/macros/s/AKfycbzQExjAV4_x9fSjd11wFUGkLpBz_6KoJMtXpmGrgNmIyyZJvsMcGTjpe3PIGCjfF1R6Tw/exec';
+const DEFAULT_URL='https://script.google.com/macros/s/AKfycbzmxAhvXLnlZLzdx36eO0GixQChUscMMGQEI2mguGb83tpnFFOLPsGFJH5EkY5_nmCB7w/exec';
 const CFGKEY='inventory_cfg_v2';
 let cfg={url:DEFAULT_URL,session:'',user:'',role:''};
 try{Object.assign(cfg,JSON.parse(localStorage.getItem(CFGKEY)||'{}'));localStorage.removeItem(KEY)}catch(e){}
