@@ -115,12 +115,15 @@ const TABLE_COLS={region:['propNo','accountable','section','endUser','category',
 const KEY='inventory_system_v1';
 let S={region:[],lab:[],master:JSON.parse(JSON.stringify(MASTER_DEFAULT)),seq:1};
 const save=()=>{schedulePush()};
-let tab='dash';const filt={region:{q:'',sec:'',cond:'',cls:''},lab:{q:'',sec:'',cond:'',cls:''}};
+let tab='dash';const filt={region:{q:'',sec:'',cond:'',cls:'',pc:''},lab:{q:'',sec:'',cond:'',cls:'',pc:''}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=v=>parseFloat(v)||0;
 const money=v=>'₱'+num(v).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
 const PPE_MIN=50000;
 const cls=r=>(r.unitCost===''||r.unitCost==null)?'':(num(r.unitCost)>=PPE_MIN?'PPE':'ICS');
+const pcOf=r=>(r.category||'').trim().toUpperCase();
+const pcs=m=>[...new Set(S[m].map(pcOf).filter(Boolean))].sort();
+const pcSel=(arr,v,h)=>`<select onchange="${h}" title="Property Category"><option value="">All property categories</option>${arr.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('')}</select>`;
 const fld=(m,k)=>MODS[m].fields.find(f=>f.k===k);
 
 /* ========= NAV ========= */
@@ -153,7 +156,7 @@ function vDash(){
 
 /* ========= LIST ========= */
 function filtered(m){const f=filt[m];return S[m].filter(r=>{
- if(f.cls&&cls(r)!==f.cls)return false;if(f.sec&&r.section!==f.sec)return false;if(f.cond&&r.condition!==f.cond)return false;
+ if(f.cls&&cls(r)!==f.cls)return false;if(f.pc&&pcOf(r)!==f.pc)return false;if(f.sec&&r.section!==f.sec)return false;if(f.cond&&r.condition!==f.cond)return false;
  return !f.q||Object.values(r).join(' ').toLowerCase().includes(f.q.toLowerCase())})}
 function vList(m){
  const cols=TABLE_COLS[m],rows=filtered(m),f=filt[m];
@@ -163,8 +166,8 @@ function vList(m){
   <input placeholder="🔍 Search..." value="${esc(f.q)}" oninput="filt.${m}.q=this.value;listBody('${m}')" id="q_${m}">
   <select onchange="filt.${m}.sec=this.value;listBody('${m}')" title="Division/Section">${opt(S.master.section,f.sec)}</select>
   <select onchange="filt.${m}.cond=this.value;listBody('${m}')" title="Condition">${opt(S.master.condition,f.cond)}</select>
+  ${pcSel(pcs(m),f.pc,`filt.${m}.pc=this.value;listBody('${m}')`)}
   <select onchange="filt.${m}.cls=this.value;listBody('${m}')" title="Class (PPE / ICS)"><option value="">All classes</option><option value="PPE" ${f.cls==='PPE'?'selected':''}>PPE (₱50,000 up)</option><option value="ICS" ${f.cls==='ICS'?'selected':''}>ICS (below ₱50,000)</option></select>
-  ${isAdmin()?`<button class="b" onclick="applyClass('${m}')" title="Fill Property Category with PPE / ICS by Unit Cost">⚙ Auto PPE/ICS</button>`:''}
   ${isAdmin()?`<button class="b p" onclick="edit('${m}')">＋ Add Item</button>`:''}</div>
   <div class="tw"><table><thead><tr>${cols.map(k=>`<th class="${['unitCost','qty','total','physical'].includes(k)?'n':''}">${k==='cls'?'Class':fld(m,k).l}</th>`).join('')}<th></th></tr></thead><tbody id="lb_${m}"></tbody></table></div></div>`;
  listBody(m);
@@ -201,34 +204,29 @@ function saveRec(e,m,id){
  e.preventDefault();if(!isAdmin())return false;const d={};
  MODS[m].fields.forEach(f=>{if(f.t!=='calc')d[f.k]=fm.elements[f.k].value.trim()});
  d.total=num(d.unitCost)*num(d.qty);
- if(!d.category)d.category=cls(d);
  if(id){Object.assign(S[m].find(x=>x.id===id),d)}else{d.id='i'+(S.seq++)+Date.now().toString(36);S[m].push(d)}
  // auto-add new dropdown values sa Master Data
  [['section','section'],['empStatus','empStatus'],['category','category'],['sub','sub'],['fund','fund'],['txType','txType'],['ics','ics'],['uom','uom'],['condition','condition'],['status','status'],['accountable','permanent']].forEach(([f,k])=>{
   if(d[f]&&!S.master[k].includes(d[f]))S.master[k].push(d[f])});
  save();closeM();render();return false;
 }
-function applyClass(m){if(!isAdmin())return;
- if(!confirm(`Set the Property Category of ALL ${S[m].length} items to PPE (Unit Cost ₱50,000 and up) or ICS (below ₱50,000)?\nThis overwrites the current Property Category. Items without a Unit Cost are skipped.`))return;
- let n=0;S[m].forEach(r=>{const c=cls(r);if(c){r.category=c;n++}});
- ['PPE','ICS'].forEach(x=>{if(!S.master.category.includes(x))S.master.category.push(x)});
- save();render();alert(n+' item(s) updated.')}
 function dup(m,id){if(!isAdmin())return;const r={...S[m].find(x=>x.id===id),id:'i'+(S.seq++)+Date.now().toString(36)};S[m].push(r);save();render()}
 function del(m,id){if(isAdmin()&&confirm('Delete this item?')){S[m]=S[m].filter(x=>x.id!==id);save();render()}}
 
 /* ========= INVENTORY COUNT FORM ========= */
-let icf={m:'lab',sec:'',cat:'',coa:'',ppe:''};let sig={p:'',v:'',r:'',w:''};
+let icf={m:'lab',sec:'',cat:'',pc:'',coa:'',ppe:''};let sig={p:'',v:'',r:'',w:''};
 function vIcf(){
  const secs=[...new Set(S[icf.m].map(r=>r.section).filter(Boolean))];
- const rows=S[icf.m].filter(r=>(!icf.sec||r.section===icf.sec)&&(!icf.cat||cls(r)===icf.cat));
+ const rows=S[icf.m].filter(r=>(!icf.sec||r.section===icf.sec)&&(!icf.cat||cls(r)===icf.cat)&&(!icf.pc||pcOf(r)===icf.pc));
  const cats=['PPE','ICS'];
  const lab=icf.m==='lab';
  const opt=(a,v)=>'<option value="">All</option>'+a.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('');
  main.innerHTML=`<div class="card noprint"><div class="bar">
   <h2 style="margin:0">Inventory Count Form</h2><span class="sp"></span>
-  <select onchange="icf.m=this.value;icf.sec='';icf.cat='';vIcf()"><option value="lab" ${lab?'selected':''}>Laboratory Equipment</option><option value="region" ${!lab?'selected':''}>Region Property</option></select>
+  <select onchange="icf.m=this.value;icf.sec='';icf.cat='';icf.pc='';vIcf()"><option value="lab" ${lab?'selected':''}>Laboratory Equipment</option><option value="region" ${!lab?'selected':''}>Region Property</option></select>
   <select onchange="icf.sec=this.value;vIcf()" title="Division/Section">${opt(secs,icf.sec)}</select>
-  <select onchange="icf.cat=this.value;vIcf()" title="Category">${opt(cats,icf.cat)}</select>
+  ${pcSel(pcs(icf.m),icf.pc,"icf.pc=this.value;vIcf()")}
+  <select onchange="icf.cat=this.value;vIcf()" title="Class (PPE / ICS)"><option value="">All classes</option>${cats.map(x=>`<option ${x===icf.cat?'selected':''}>${x}</option>`).join('')}</select>
   <button class="b p" onclick="window.print()">🖨 Print</button></div>
   <div class="bar"><input placeholder="PPE Account Group" value="${esc(icf.ppe)}" oninput="icf.ppe=this.value">
   <input placeholder="Prepared by" value="${esc(sig.p)}" oninput="sig.p=this.value"><input placeholder="Verified by" value="${esc(sig.v)}" oninput="sig.v=this.value">
@@ -236,7 +234,7 @@ function vIcf(){
   <input placeholder="Witnessed by (COA)" list="dl_coa" value="${esc(sig.w)}" oninput="sig.w=this.value"><datalist id="dl_coa">${S.master.coa.map(x=>`<option>${esc(x)}</option>`).join('')}</datalist>
   <small style="color:var(--mute)">Type the names, then print (they stay when you change the filter).</small></div></div>
   <div class="form" id="icfprint"><h3>${lab?'MINISTRY OF SCIENCE AND TECHNOLOGY':''}</h3><h2>Inventory Count Form</h2>
-  <div class="meta"><span><b>PPE Account Group:</b> ${esc(icf.ppe||MODS[icf.m].group)}</span><span><b>Category:</b> ${esc(icf.cat||'PPE / ICS')}</span><span><b>Division / Section:</b> ${esc(icf.sec||'ALL')}</span><span style="margin-left:auto"><b>Sheet No.</b> ___ of ___</span></div>
+  <div class="meta"><span><b>PPE Account Group:</b> ${esc(icf.ppe||MODS[icf.m].group)}</span><span><b>Category:</b> ${esc(icf.cat||'PPE / ICS')}</span><span><b>Property Category:</b> ${esc(icf.pc||'ALL')}</span><span><b>Division / Section:</b> ${esc(icf.sec||'ALL')}</span><span style="margin-left:auto"><b>Sheet No.</b> ___ of ___</span></div>
   <table><thead><tr><th>No.</th><th>Article/Item</th><th>Description</th><th>Old Prop. No.</th><th>New Prop. No.</th><th>Unit of Measurement</th><th>Unit Value</th><th>Qty. per Property Card</th><th>Qty. per Physical Count</th><th>Location / Whereabouts</th><th>Condition</th><th>Remarks</th>${lab?'':'<th>Property Category</th>'}</tr></thead><tbody>
   ${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.article)}</td><td>${esc(r.description)}</td><td>${esc(r.oldNo)}</td><td>${esc(r.propNumber||r.propNo)}</td><td>${esc(r.uom)}</td><td style="text-align:right">${num(r.unitCost).toLocaleString('en-PH',{minimumFractionDigits:2})}</td><td style="text-align:center">${esc(r.qty)}</td><td style="text-align:center">${esc(r.physical)}</td><td>${esc(r.location)}</td><td>${esc(r.condition)}</td><td>${esc(r.remarks)}</td>${lab?'':`<td>${esc(r.category)}</td>`}</tr>`).join('')||`<tr><td colspan="13" style="text-align:center;padding:20px">No items for the selected filter</td></tr>`}
   </tbody></table>
@@ -247,14 +245,14 @@ function vIcf(){
 }
 
 /* ========= STICKERS ========= */
-let sk={m:'lab',sec:'',cls:''};
+let sk={m:'lab',sec:'',cls:'',pc:''};
 function vStk(){
  const secs=[...new Set(S[sk.m].map(r=>r.section).filter(Boolean))];
- const rows=S[sk.m].filter(r=>(!sk.sec||r.section===sk.sec)&&(!sk.cls||cls(r)===sk.cls));
+ const rows=S[sk.m].filter(r=>(!sk.sec||r.section===sk.sec)&&(!sk.cls||cls(r)===sk.cls)&&(!sk.pc||pcOf(r)===sk.pc));
  main.innerHTML=`<div class="card noprint"><div class="bar"><h2 style="margin:0">Property Stickers</h2><span class="sp"></span>
-  <select onchange="sk.m=this.value;sk.sec='';vStk()"><option value="lab" ${sk.m==='lab'?'selected':''}>Laboratory Equipment</option><option value="region" ${sk.m==='region'?'selected':''}>Region Property</option></select>
+  <select onchange="sk.m=this.value;sk.sec='';sk.pc='';vStk()"><option value="lab" ${sk.m==='lab'?'selected':''}>Laboratory Equipment</option><option value="region" ${sk.m==='region'?'selected':''}>Region Property</option></select>
   <select onchange="sk.sec=this.value;vStk()"><option value="">All Sections</option>${secs.map(x=>`<option ${x===sk.sec?'selected':''}>${esc(x)}</option>`).join('')}</select>
-  <select onchange="sk.cls=this.value;vStk()"><option value="">PPE + ICS</option><option ${sk.cls==='PPE'?'selected':''}>PPE</option><option ${sk.cls==='ICS'?'selected':''}>ICS</option></select><button class="b p" onclick="window.print()">🖨 Print Stickers</button></div></div>
+  ${pcSel(pcs(sk.m),sk.pc,"sk.pc=this.value;vStk()")}<select onchange="sk.cls=this.value;vStk()"><option value="">PPE + ICS</option><option ${sk.cls==='PPE'?'selected':''}>PPE</option><option ${sk.cls==='ICS'?'selected':''}>ICS</option></select><button class="b p" onclick="window.print()">🖨 Print Stickers</button></div></div>
   <div class="stk">${rows.map(r=>`<div class="sticker"><div class="h">PROPERTY STICKER — ${esc(MODS[sk.m].group)}${cls(r)?' ('+cls(r)+')':''}</div>
   <div class="no">${esc(r.propNumber||r.propNo||'—')}</div>
   <p><b>Item:</b> ${esc(r.article||r.description)}</p><p><b>Desc:</b> ${esc((r.description||'').slice(0,90))}</p>
