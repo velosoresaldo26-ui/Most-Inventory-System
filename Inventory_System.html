@@ -34,7 +34,7 @@ th{background:#eef1f7;position:sticky;top:0;font-size:12px;text-transform:upperc
 td.n,th.n{text-align:right}
 tr:hover td{background:#fafbfe}
 .tag{padding:2px 8px;border-radius:99px;font-size:12px;background:#eef1f7}
-.tag.Serviceable{background:#dff5ec;color:var(--ok)}.tag.Unserviceable,.tag.Lost{background:#fbe3e0;color:var(--bad)}.tag.For{background:#fdf0d5;color:var(--warn)}
+.tag.PPE{background:#e8efff;color:#1f5eff}.tag.ICS{background:#f3e8ff;color:#7a3db8}.tag.Serviceable{background:#dff5ec;color:var(--ok)}.tag.Unserviceable,.tag.Lost{background:#fbe3e0;color:var(--bad)}.tag.For{background:#fdf0d5;color:var(--warn)}
 .modal{position:fixed;inset:0;background:#0007;display:none;align-items:flex-start;justify-content:center;padding:30px 12px;overflow:auto;z-index:20}
 .modal.show{display:flex}
 .mb{background:#fff;border-radius:14px;padding:20px;width:min(900px,100%)}
@@ -108,17 +108,19 @@ const MODS={
   fields:[...COMMON.slice(0,1),F('status','Status','text','status'),...COMMON.slice(1,8),
    ...COMMON.slice(8),F('life','Estimated Useful Life (Year)','num'),F('category2','Category')]}
 };
-const TABLE_COLS={region:['propNo','accountable','section','endUser','category','sub','article','description','propNumber','unitCost','qty','total','physical','condition'],
- lab:['propNo','status','accountable','section','endUser','category','article','description','propNumber','unitCost','qty','total','physical','condition']};
+const TABLE_COLS={region:['propNo','accountable','section','endUser','category','sub','article','description','propNumber','unitCost','qty','total','cls','physical','condition'],
+ lab:['propNo','status','accountable','section','endUser','category','article','description','propNumber','unitCost','qty','total','cls','physical','condition']};
 
 /* ========= STATE ========= */
 const KEY='inventory_system_v1';
 let S={region:[],lab:[],master:JSON.parse(JSON.stringify(MASTER_DEFAULT)),seq:1};
 const save=()=>{schedulePush()};
-let tab='dash';const filt={region:{q:'',sec:'',cond:''},lab:{q:'',sec:'',cond:''}};
+let tab='dash';const filt={region:{q:'',sec:'',cond:'',cls:''},lab:{q:'',sec:'',cond:'',cls:''}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=v=>parseFloat(v)||0;
 const money=v=>'₱'+num(v).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const PPE_MIN=50000;
+const cls=r=>(r.unitCost===''||r.unitCost==null)?'':(num(r.unitCost)>=PPE_MIN?'PPE':'ICS');
 const fld=(m,k)=>MODS[m].fields.find(f=>f.k===k);
 
 /* ========= NAV ========= */
@@ -141,6 +143,8 @@ function vDash(){
  <div class="card stat"><span>Lab Equipment items</span><b>${S.lab.length}</b></div>
  <div class="card stat"><span>Total Value (Region)</span><b>${money(tv('region'))}</b></div>
  <div class="card stat"><span>Total Value (Lab)</span><b>${money(tv('lab'))}</b></div>
+ <div class="card stat"><span>PPE (₱50,000 up)</span><b>${all.filter(r=>cls(r)==='PPE').length}</b><small style="color:var(--mute)">${money(all.filter(r=>cls(r)==='PPE').reduce((a,r)=>a+num(r.total),0))}</small></div>
+ <div class="card stat"><span>ICS (below ₱50,000)</span><b>${all.filter(r=>cls(r)==='ICS').length}</b><small style="color:var(--mute)">${money(all.filter(r=>cls(r)==='ICS').reduce((a,r)=>a+num(r.total),0))}</small></div>
  <div class="card stat"><span>Count variances</span><b style="color:${var_?'var(--bad)':'var(--ok)'}">${var_}</b></div></div>
  <div class="grid"><div class="card"><h3 style="margin-top:0">Per Condition</h3>${Object.keys(byC).length?Object.entries(byC).map(([k,v])=>`<p style="margin:6px 0"><span class="tag ${esc(k.split(' ')[0])}">${esc(k)}</span> &nbsp;<b>${v}</b></p>`).join(''):'<div class="empty">No data yet</div>'}</div>
  <div class="card"><h3 style="margin-top:0">Value per Division / Section</h3>${Object.keys(bySec).length?Object.entries(bySec).map(([k,v])=>`<p style="margin:6px 0">${esc(k)} — <b>${money(v)}</b></p>`).join(''):'<div class="empty">No data yet</div>'}</div></div>
@@ -149,7 +153,7 @@ function vDash(){
 
 /* ========= LIST ========= */
 function filtered(m){const f=filt[m];return S[m].filter(r=>{
- if(f.sec&&r.section!==f.sec)return false;if(f.cond&&r.condition!==f.cond)return false;
+ if(f.cls&&cls(r)!==f.cls)return false;if(f.sec&&r.section!==f.sec)return false;if(f.cond&&r.condition!==f.cond)return false;
  return !f.q||Object.values(r).join(' ').toLowerCase().includes(f.q.toLowerCase())})}
 function vList(m){
  const cols=TABLE_COLS[m],rows=filtered(m),f=filt[m];
@@ -159,8 +163,10 @@ function vList(m){
   <input placeholder="🔍 Search..." value="${esc(f.q)}" oninput="filt.${m}.q=this.value;listBody('${m}')" id="q_${m}">
   <select onchange="filt.${m}.sec=this.value;listBody('${m}')" title="Division/Section">${opt(S.master.section,f.sec)}</select>
   <select onchange="filt.${m}.cond=this.value;listBody('${m}')" title="Condition">${opt(S.master.condition,f.cond)}</select>
+  <select onchange="filt.${m}.cls=this.value;listBody('${m}')" title="Class (PPE / ICS)"><option value="">All classes</option><option value="PPE" ${f.cls==='PPE'?'selected':''}>PPE (₱50,000 up)</option><option value="ICS" ${f.cls==='ICS'?'selected':''}>ICS (below ₱50,000)</option></select>
+  ${isAdmin()?`<button class="b" onclick="applyClass('${m}')" title="Fill Property Category with PPE / ICS by Unit Cost">⚙ Auto PPE/ICS</button>`:''}
   ${isAdmin()?`<button class="b p" onclick="edit('${m}')">＋ Add Item</button>`:''}</div>
-  <div class="tw"><table><thead><tr>${cols.map(k=>`<th class="${['unitCost','qty','total','physical'].includes(k)?'n':''}">${fld(m,k).l}</th>`).join('')}<th></th></tr></thead><tbody id="lb_${m}"></tbody></table></div></div>`;
+  <div class="tw"><table><thead><tr>${cols.map(k=>`<th class="${['unitCost','qty','total','physical'].includes(k)?'n':''}">${k==='cls'?'Class':fld(m,k).l}</th>`).join('')}<th></th></tr></thead><tbody id="lb_${m}"></tbody></table></div></div>`;
  listBody(m);
 }
 function listBody(m){
@@ -168,6 +174,7 @@ function listBody(m){
  document.getElementById('lb_'+m).innerHTML=rows.length?rows.map(r=>`<tr>${cols.map(k=>{
   let v=r[k];if(k==='unitCost'||k==='total')return`<td class="n">${money(v)}</td>`;
   if(k==='qty'||k==='physical')return`<td class="n" ${k==='physical'&&v!==''&&v!=null&&num(v)!==num(r.qty)?'style="color:var(--bad);font-weight:700"':''}>${esc(v)}</td>`;
+  if(k==='cls'){const c=cls(r);return`<td>${c?`<span class="tag ${c}">${c}</span>`:''}</td>`}
   if(k==='condition'&&v)return`<td><span class="tag ${esc(String(v).split(' ')[0])}">${esc(v)}</span></td>`;
   if(k==='description')return`<td title="${esc(v)}" style="max-width:260px;overflow:hidden;text-overflow:ellipsis">${esc(v)}</td>`;
   return`<td>${esc(v)}</td>`}).join('')}<td>${isAdmin()?`<button class="b" onclick="edit('${m}','${r.id}')">✏️</button> <button class="b" onclick="dup('${m}','${r.id}')" title="Duplicate">⧉</button> <button class="b d" onclick="del('${m}','${r.id}')">🗑</button>`:''}</td></tr>`).join('')
@@ -182,25 +189,30 @@ function edit(m,id){
  mb.innerHTML=`<h3>${id?'Edit':'New'} ${MODS[m].name}</h3>${dl}<form id="fm" onsubmit="return saveRec(event,'${m}','${id||''}')"><div class="fg">`+
  MODS[m].fields.map(f=>{
   const v=r[f.k]??'';const L=`<label>${f.l}</label>`;
-  if(f.t==='calc')return`<div>${L}<input id="f_total" readonly value="${money(r.total||0)}"></div>`;
+  if(f.t==='calc')return`<div>${L}<input id="f_total" readonly value="${money(r.total||0)}"></div><div><label>Classification (auto)</label><input id="f_cls" readonly value="${cls(r)||'—'}"></div>`;
   if(f.t==='area')return`<div style="grid-column:1/-1">${L}<textarea name="${f.k}" rows="2">${esc(v)}</textarea></div>`;
   return`<div>${L}<input name="${f.k}" value="${esc(v)}" ${f.t==='num'?'type="number" step="any" min="0"':''} ${f.list?`list="dl_${f.list}"`:''} ${f.k==='unitCost'||f.k==='qty'?'oninput="calcT()"':''}></div>`}).join('')+
  `</div><div class="mf"><button type="button" class="b" onclick="closeM()">Cancel</button><button class="b p">💾 Save</button></div></form>`;
  modal.classList.add('show');
 }
-function calcT(){const f=fm.elements;document.getElementById('f_total').value=money(num(f.unitCost.value)*num(f.qty.value))}
+function calcT(){const f=fm.elements;document.getElementById('f_total').value=money(num(f.unitCost.value)*num(f.qty.value));document.getElementById('f_cls').value=cls({unitCost:f.unitCost.value})||'—'}
 function closeM(){modal.classList.remove('show')}
 function saveRec(e,m,id){
  e.preventDefault();if(!isAdmin())return false;const d={};
  MODS[m].fields.forEach(f=>{if(f.t!=='calc')d[f.k]=fm.elements[f.k].value.trim()});
  d.total=num(d.unitCost)*num(d.qty);
- d.sub&&0;
+ if(!d.category)d.category=cls(d);
  if(id){Object.assign(S[m].find(x=>x.id===id),d)}else{d.id='i'+(S.seq++)+Date.now().toString(36);S[m].push(d)}
  // auto-add new dropdown values sa Master Data
  [['section','section'],['empStatus','empStatus'],['category','category'],['sub','sub'],['fund','fund'],['txType','txType'],['ics','ics'],['uom','uom'],['condition','condition'],['status','status'],['accountable','permanent']].forEach(([f,k])=>{
   if(d[f]&&!S.master[k].includes(d[f]))S.master[k].push(d[f])});
  save();closeM();render();return false;
 }
+function applyClass(m){if(!isAdmin())return;
+ if(!confirm(`Set the Property Category of ALL ${S[m].length} items to PPE (Unit Cost ₱50,000 and up) or ICS (below ₱50,000)?\nThis overwrites the current Property Category. Items without a Unit Cost are skipped.`))return;
+ let n=0;S[m].forEach(r=>{const c=cls(r);if(c){r.category=c;n++}});
+ ['PPE','ICS'].forEach(x=>{if(!S.master.category.includes(x))S.master.category.push(x)});
+ save();render();alert(n+' item(s) updated.')}
 function dup(m,id){if(!isAdmin())return;const r={...S[m].find(x=>x.id===id),id:'i'+(S.seq++)+Date.now().toString(36)};S[m].push(r);save();render()}
 function del(m,id){if(isAdmin()&&confirm('Delete this item?')){S[m]=S[m].filter(x=>x.id!==id);save();render()}}
 
@@ -208,8 +220,8 @@ function del(m,id){if(isAdmin()&&confirm('Delete this item?')){S[m]=S[m].filter(
 let icf={m:'lab',sec:'',cat:'',coa:'',ppe:''};let sig={p:'',v:'',r:'',w:''};
 function vIcf(){
  const secs=[...new Set(S[icf.m].map(r=>r.section).filter(Boolean))];
- const rows=S[icf.m].filter(r=>(!icf.sec||r.section===icf.sec)&&(!icf.cat||r.category===icf.cat));
- const cats=[...new Set(S[icf.m].map(r=>r.category).filter(Boolean))];
+ const rows=S[icf.m].filter(r=>(!icf.sec||r.section===icf.sec)&&(!icf.cat||cls(r)===icf.cat));
+ const cats=['PPE','ICS'];
  const lab=icf.m==='lab';
  const opt=(a,v)=>'<option value="">All</option>'+a.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('');
  main.innerHTML=`<div class="card noprint"><div class="bar">
@@ -224,7 +236,7 @@ function vIcf(){
   <input placeholder="Witnessed by (COA)" list="dl_coa" value="${esc(sig.w)}" oninput="sig.w=this.value"><datalist id="dl_coa">${S.master.coa.map(x=>`<option>${esc(x)}</option>`).join('')}</datalist>
   <small style="color:var(--mute)">Type the names, then print (they stay when you change the filter).</small></div></div>
   <div class="form" id="icfprint"><h3>${lab?'MINISTRY OF SCIENCE AND TECHNOLOGY':''}</h3><h2>Inventory Count Form</h2>
-  <div class="meta"><span><b>PPE Account Group:</b> ${esc(icf.ppe||MODS[icf.m].group)}</span><span><b>Category:</b> ${esc(icf.cat||'PPE')}</span><span><b>Division / Section:</b> ${esc(icf.sec||'ALL')}</span><span style="margin-left:auto"><b>Sheet No.</b> ___ of ___</span></div>
+  <div class="meta"><span><b>PPE Account Group:</b> ${esc(icf.ppe||MODS[icf.m].group)}</span><span><b>Category:</b> ${esc(icf.cat||'PPE / ICS')}</span><span><b>Division / Section:</b> ${esc(icf.sec||'ALL')}</span><span style="margin-left:auto"><b>Sheet No.</b> ___ of ___</span></div>
   <table><thead><tr><th>No.</th><th>Article/Item</th><th>Description</th><th>Old Prop. No.</th><th>New Prop. No.</th><th>Unit of Measurement</th><th>Unit Value</th><th>Qty. per Property Card</th><th>Qty. per Physical Count</th><th>Location / Whereabouts</th><th>Condition</th><th>Remarks</th>${lab?'':'<th>Property Category</th>'}</tr></thead><tbody>
   ${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.article)}</td><td>${esc(r.description)}</td><td>${esc(r.oldNo)}</td><td>${esc(r.propNumber||r.propNo)}</td><td>${esc(r.uom)}</td><td style="text-align:right">${num(r.unitCost).toLocaleString('en-PH',{minimumFractionDigits:2})}</td><td style="text-align:center">${esc(r.qty)}</td><td style="text-align:center">${esc(r.physical)}</td><td>${esc(r.location)}</td><td>${esc(r.condition)}</td><td>${esc(r.remarks)}</td>${lab?'':`<td>${esc(r.category)}</td>`}</tr>`).join('')||`<tr><td colspan="13" style="text-align:center;padding:20px">No items for the selected filter</td></tr>`}
   </tbody></table>
@@ -235,15 +247,15 @@ function vIcf(){
 }
 
 /* ========= STICKERS ========= */
-let sk={m:'lab',sec:''};
+let sk={m:'lab',sec:'',cls:''};
 function vStk(){
  const secs=[...new Set(S[sk.m].map(r=>r.section).filter(Boolean))];
- const rows=S[sk.m].filter(r=>!sk.sec||r.section===sk.sec);
+ const rows=S[sk.m].filter(r=>(!sk.sec||r.section===sk.sec)&&(!sk.cls||cls(r)===sk.cls));
  main.innerHTML=`<div class="card noprint"><div class="bar"><h2 style="margin:0">Property Stickers</h2><span class="sp"></span>
   <select onchange="sk.m=this.value;sk.sec='';vStk()"><option value="lab" ${sk.m==='lab'?'selected':''}>Laboratory Equipment</option><option value="region" ${sk.m==='region'?'selected':''}>Region Property</option></select>
   <select onchange="sk.sec=this.value;vStk()"><option value="">All Sections</option>${secs.map(x=>`<option ${x===sk.sec?'selected':''}>${esc(x)}</option>`).join('')}</select>
-  <button class="b p" onclick="window.print()">🖨 Print Stickers</button></div></div>
-  <div class="stk">${rows.map(r=>`<div class="sticker"><div class="h">PROPERTY STICKER — ${esc(MODS[sk.m].group)}</div>
+  <select onchange="sk.cls=this.value;vStk()"><option value="">PPE + ICS</option><option ${sk.cls==='PPE'?'selected':''}>PPE</option><option ${sk.cls==='ICS'?'selected':''}>ICS</option></select><button class="b p" onclick="window.print()">🖨 Print Stickers</button></div></div>
+  <div class="stk">${rows.map(r=>`<div class="sticker"><div class="h">PROPERTY STICKER — ${esc(MODS[sk.m].group)}${cls(r)?' ('+cls(r)+')':''}</div>
   <div class="no">${esc(r.propNumber||r.propNo||'—')}</div>
   <p><b>Item:</b> ${esc(r.article||r.description)}</p><p><b>Desc:</b> ${esc((r.description||'').slice(0,90))}</p>
   <p><b>Accountable:</b> ${esc(r.accountable)}</p><p><b>End User:</b> ${esc(r.endUser)}</p>
