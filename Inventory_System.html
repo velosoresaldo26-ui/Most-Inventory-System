@@ -60,6 +60,10 @@ tr:hover td{background:#fafbfe}
 .sticker .h{text-align:center;font-weight:700;border-bottom:1px solid #000;padding-bottom:4px;margin-bottom:5px}
 .sticker .no{font-size:18px;font-weight:800;text-align:center;letter-spacing:.04em;margin:4px 0}
 .sticker p{margin:2px 0}
+#lg{display:none;min-height:80vh;align-items:center;justify-content:center;padding:16px}
+.locked #lg{display:flex}.locked nav,.locked main,.locked #syncb{display:none}
+#lg .card{width:min(420px,100%);margin:0}#lg label{display:block;font-size:12px;font-weight:600;color:var(--mute);margin:10px 0 3px}
+.who{font-size:13px;color:var(--mute);align-self:center;padding:0 6px}
 @media print{
  header,nav,.noprint,.modal{display:none!important}
  body{background:#fff}main{padding:0;max-width:none}
@@ -71,6 +75,7 @@ tr:hover td{background:#fafbfe}
 <body>
 <header><h1>📦 Inventory System</h1><span id="syncb" class="tag" style="margin-left:auto"></span><small>Region Property • Laboratory Equipment • Inventory Count Form • Property Stickers</small></header>
 <nav id="nav"></nav>
+<div id="lg"></div>
 <main id="main"></main>
 <div class="modal" id="modal"><div class="mb" id="mb"></div></div>
 
@@ -109,8 +114,7 @@ const TABLE_COLS={region:['propNo','accountable','section','endUser','category',
 /* ========= STATE ========= */
 const KEY='inventory_system_v1';
 let S={region:[],lab:[],master:JSON.parse(JSON.stringify(MASTER_DEFAULT)),seq:1};
-try{const x=JSON.parse(localStorage.getItem(KEY)||'null');if(x)S=Object.assign(S,x)}catch(e){}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}schedulePush()};
+const save=()=>{schedulePush()};
 let tab='dash';const filt={region:{q:'',sec:'',cond:''},lab:{q:'',sec:'',cond:''}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=v=>parseFloat(v)||0;
@@ -118,11 +122,12 @@ const money=v=>'₱'+num(v).toLocaleString('en-PH',{minimumFractionDigits:2,maxi
 const fld=(m,k)=>MODS[m].fields.find(f=>f.k===k);
 
 /* ========= NAV ========= */
-const TABS=[['dash','Dashboard'],['region','Region Property'],['lab','Lab Equipment'],['icf','Inventory Count Form'],['stk','Property Stickers'],['master','Master Data'],['sheet','Google Sheet']];
-function renderNav(){nav.innerHTML=TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" onclick="go('${k}')">${l}</button>`).join('')+
- `<span class="sp"></span><button class="b" onclick="exportXlsx()">⬇ Export Excel</button><button class="b" onclick="importPick()">⬆ Import Excel</button><input type="file" id="imp" accept=".xlsx,.xls,.csv" class="hide" onchange="importXlsx(this)">`}
+const isAdmin=()=>cfg.role==='admin';
+const tabsNow=()=>[['dash','Dashboard'],['region','Region Property'],['lab','Lab Equipment'],['icf','Inventory Count Form'],['stk','Property Stickers'],['master','Master Data'],...(isAdmin()?[['users','Users']]:[]),['acct','My Account']];
+function renderNav(){nav.innerHTML=tabsNow().map(([k,l])=>`<button class="${k===tab?'on':''}" onclick="go('${k}')">${l}</button>`).join('')+
+ `<span class="sp"></span><span class="who">👤 ${esc(cfg.user)} (${isAdmin()?'Admin':'Staff – view only'})</span><button class="b" onclick="exportXlsx()">⬇ Export Excel</button>${isAdmin()?`<button class="b" onclick="importPick()">⬆ Import Excel</button><input type="file" id="imp" accept=".xlsx,.xls,.csv" class="hide" onchange="importXlsx(this)">`:''}<button class="b d" onclick="logout()">Log out</button>`}
 function go(t){tab=t;render()}
-function render(){renderNav();({dash:vDash,region:()=>vList('region'),lab:()=>vList('lab'),icf:vIcf,stk:vStk,master:vMaster,sheet:vSheet})[tab]();}
+function render(){renderNav();({dash:vDash,region:()=>vList('region'),lab:()=>vList('lab'),icf:vIcf,stk:vStk,master:vMaster,users:vUsers,acct:vAcct})[tab]();}
 
 /* ========= DASHBOARD ========= */
 function vDash(){
@@ -139,7 +144,7 @@ function vDash(){
  <div class="card stat"><span>Count variances</span><b style="color:${var_?'var(--bad)':'var(--ok)'}">${var_}</b></div></div>
  <div class="grid"><div class="card"><h3 style="margin-top:0">Per Condition</h3>${Object.keys(byC).length?Object.entries(byC).map(([k,v])=>`<p style="margin:6px 0"><span class="tag ${esc(k.split(' ')[0])}">${esc(k)}</span> &nbsp;<b>${v}</b></p>`).join(''):'<div class="empty">No data yet</div>'}</div>
  <div class="card"><h3 style="margin-top:0">Value per Division / Section</h3>${Object.keys(bySec).length?Object.entries(bySec).map(([k,v])=>`<p style="margin:6px 0">${esc(k)} — <b>${money(v)}</b></p>`).join(''):'<div class="empty">No data yet</div>'}</div></div>
- <div class="card"><b>How to use:</b> 1) Fill in <i>Master Data</i> first (dropdown lists). 2) Add items under <i>Region Property</i> or <i>Lab Equipment</i> (or import your Excel file). 3) Generate the <i>Inventory Count Form</i> and print it. 4) Print the <i>Property Stickers</i>. Data is saved in this browser only — use Export Excel for backups.</div>`;
+ <div class="card"><b>How to use:</b> 1) Fill in <i>Master Data</i> (dropdown lists). 2) Add items under <i>Region Property</i> or <i>Lab Equipment</i>. 3) Generate the <i>Inventory Count Form</i> and print it. 4) Print the <i>Property Stickers</i>. All data is stored in your Google Sheet. Staff accounts can only view and print.</div>`;
 }
 
 /* ========= LIST ========= */
@@ -154,7 +159,7 @@ function vList(m){
   <input placeholder="🔍 Search..." value="${esc(f.q)}" oninput="filt.${m}.q=this.value;listBody('${m}')" id="q_${m}">
   <select onchange="filt.${m}.sec=this.value;listBody('${m}')" title="Division/Section">${opt(S.master.section,f.sec)}</select>
   <select onchange="filt.${m}.cond=this.value;listBody('${m}')" title="Condition">${opt(S.master.condition,f.cond)}</select>
-  <button class="b p" onclick="edit('${m}')">＋ Add Item</button></div>
+  ${isAdmin()?`<button class="b p" onclick="edit('${m}')">＋ Add Item</button>`:''}</div>
   <div class="tw"><table><thead><tr>${cols.map(k=>`<th class="${['unitCost','qty','total','physical'].includes(k)?'n':''}">${fld(m,k).l}</th>`).join('')}<th></th></tr></thead><tbody id="lb_${m}"></tbody></table></div></div>`;
  listBody(m);
 }
@@ -165,12 +170,13 @@ function listBody(m){
   if(k==='qty'||k==='physical')return`<td class="n" ${k==='physical'&&v!==''&&v!=null&&num(v)!==num(r.qty)?'style="color:var(--bad);font-weight:700"':''}>${esc(v)}</td>`;
   if(k==='condition'&&v)return`<td><span class="tag ${esc(String(v).split(' ')[0])}">${esc(v)}</span></td>`;
   if(k==='description')return`<td title="${esc(v)}" style="max-width:260px;overflow:hidden;text-overflow:ellipsis">${esc(v)}</td>`;
-  return`<td>${esc(v)}</td>`}).join('')}<td><button class="b" onclick="edit('${m}','${r.id}')">✏️</button> <button class="b" onclick="dup('${m}','${r.id}')" title="Duplicate">⧉</button> <button class="b d" onclick="del('${m}','${r.id}')">🗑</button></td></tr>`).join('')
-  :`<tr><td colspan="${cols.length+1}" class="empty">No items yet. Click “＋ Add Item” or import your Excel file.</td></tr>`;
+  return`<td>${esc(v)}</td>`}).join('')}<td>${isAdmin()?`<button class="b" onclick="edit('${m}','${r.id}')">✏️</button> <button class="b" onclick="dup('${m}','${r.id}')" title="Duplicate">⧉</button> <button class="b d" onclick="del('${m}','${r.id}')">🗑</button>`:''}</td></tr>`).join('')
+  :`<tr><td colspan="${cols.length+1}" class="empty">No items yet.</td></tr>`;
 }
 
 /* ========= ADD / EDIT ========= */
 function edit(m,id){
+ if(!isAdmin())return;
  const r=id?S[m].find(x=>x.id===id):{};
  const dl=MASTER_DEFS.map(([k])=>`<datalist id="dl_${k}">${S.master[k].map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`).join('');
  mb.innerHTML=`<h3>${id?'Edit':'New'} ${MODS[m].name}</h3>${dl}<form id="fm" onsubmit="return saveRec(event,'${m}','${id||''}')"><div class="fg">`+
@@ -185,7 +191,7 @@ function edit(m,id){
 function calcT(){const f=fm.elements;document.getElementById('f_total').value=money(num(f.unitCost.value)*num(f.qty.value))}
 function closeM(){modal.classList.remove('show')}
 function saveRec(e,m,id){
- e.preventDefault();const d={};
+ e.preventDefault();if(!isAdmin())return false;const d={};
  MODS[m].fields.forEach(f=>{if(f.t!=='calc')d[f.k]=fm.elements[f.k].value.trim()});
  d.total=num(d.unitCost)*num(d.qty);
  d.sub&&0;
@@ -195,8 +201,8 @@ function saveRec(e,m,id){
   if(d[f]&&!S.master[k].includes(d[f]))S.master[k].push(d[f])});
  save();closeM();render();return false;
 }
-function dup(m,id){const r={...S[m].find(x=>x.id===id),id:'i'+(S.seq++)+Date.now().toString(36)};S[m].push(r);save();render()}
-function del(m,id){if(confirm('Delete this item?')){S[m]=S[m].filter(x=>x.id!==id);save();render()}}
+function dup(m,id){if(!isAdmin())return;const r={...S[m].find(x=>x.id===id),id:'i'+(S.seq++)+Date.now().toString(36)};S[m].push(r);save();render()}
+function del(m,id){if(isAdmin()&&confirm('Delete this item?')){S[m]=S[m].filter(x=>x.id!==id);save();render()}}
 
 /* ========= INVENTORY COUNT FORM ========= */
 let icf={m:'lab',sec:'',cat:'',coa:'',ppe:''};let sig={p:'',v:'',r:'',w:''};
@@ -246,11 +252,11 @@ function vStk(){
 
 /* ========= MASTER DATA ========= */
 function vMaster(){
- main.innerHTML=`<div class="card"><div class="bar"><h2 style="margin:0">Master Data (Dropdown Lists)</h2><span class="sp"></span><button class="b p" onclick="saveMaster()">💾 Save</button></div>
+ main.innerHTML=`<div class="card"><div class="bar"><h2 style="margin:0">Master Data (Dropdown Lists)</h2><span class="sp"></span>${isAdmin()?`<button class="b p" onclick="saveMaster()">💾 Save</button>`:''}</div>
  <p style="color:var(--mute);margin-top:0">One value per line. These appear as dropdown suggestions in the forms.</p>
- <div class="ml">${MASTER_DEFS.map(([k,l])=>`<div><label>${l}</label><textarea id="m_${k}">${esc(S.master[k].join('\n'))}</textarea></div>`).join('')}</div></div>`;
+ <div class="ml">${MASTER_DEFS.map(([k,l])=>`<div><label>${l}</label><textarea id="m_${k}" ${isAdmin()?'':'readonly'}>${esc(S.master[k].join('\n'))}</textarea></div>`).join('')}</div></div>`;
 }
-function saveMaster(){MASTER_DEFS.forEach(([k])=>{S.master[k]=document.getElementById('m_'+k).value.split('\n').map(x=>x.trim()).filter(Boolean)});save();alert('Master Data saved ✔')}
+function saveMaster(){if(!isAdmin())return;MASTER_DEFS.forEach(([k])=>{S.master[k]=document.getElementById('m_'+k).value.split('\n').map(x=>x.trim()).filter(Boolean)});save();alert('Master Data saved ✔')}
 
 /* ========= EXCEL IMPORT / EXPORT ========= */
 function exportXlsx(){
@@ -266,9 +272,9 @@ function exportXlsx(){
  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(md,{header:MASTER_DEFS.map(x=>x[1])}),'MasterData');
  XLSX.writeFile(wb,'Inventory_System_Export.xlsx');
 }
-function importPick(){document.getElementById('imp').click()}
+function importPick(){if(!isAdmin())return;document.getElementById('imp').click()}
 function importXlsx(inp){
- const file=inp.files[0];if(!file)return;if(!window.XLSX)return alert('Excel library could not be loaded.');
+ const file=inp.files[0];if(!file||!isAdmin())return;if(!window.XLSX)return alert('Excel library could not be loaded.');
  const rd=new FileReader();rd.onload=e=>{
   const wb=XLSX.read(e.target.result,{type:'array'});let added=0;
   Object.keys(MODS).forEach(m=>{
@@ -289,61 +295,125 @@ function importXlsx(inp){
  };rd.readAsArrayBuffer(file);
 }
 
-/* ========= GOOGLE SHEET SYNC ========= */
-S.cfg=S.cfg||{url:'',token:''};
-let sync={state:'off',msg:'',pulled:false,t:null};
+/* ========= LOGIN + GOOGLE SHEET ========= */
+const DEFAULT_URL='https://script.google.com/macros/s/AKfycbzQExjAV4_x9fSjd11wFUGkLpBz_6KoJMtXpmGrgNmIyyZJvsMcGTjpe3PIGCjfF1R6Tw/exec';
+const CFGKEY='inventory_cfg_v2';
+let cfg={url:DEFAULT_URL,session:'',user:'',role:''};
+try{Object.assign(cfg,JSON.parse(localStorage.getItem(CFGKEY)||'{}'));localStorage.removeItem(KEY)}catch(e){}
+const saveCfg=()=>{try{localStorage.setItem(CFGKEY,JSON.stringify(cfg))}catch(e){}};
+let sync={state:'off',msg:'',rev:null,busy:false,dirty:false,t:null};
 const nrm=s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,'');
 function badge(){const b=document.getElementById('syncb');if(!b)return;
- const m={off:['Local only','#eef1f7','#6b7488'],pending:['Saving…','#fdf0d5','#b7791f'],ok:['Synced ✔','#dff5ec','#12805c'],err:['Sync error','#fbe3e0','#c0392b'],load:['Loading…','#e8efff','#1f5eff']}[sync.state];
+ const m={off:['Not connected','#eef1f7','#6b7488'],pending:['Saving…','#fdf0d5','#b7791f'],ok:['Synced ✔','#dff5ec','#12805c'],err:['Sync error','#fbe3e0','#c0392b'],load:['Loading…','#e8efff','#1f5eff']}[sync.state];
  b.textContent='Google Sheet: '+m[0];b.style.background=m[1];b.style.color=m[2];b.title=sync.msg}
 function toRow(m,r){return Object.fromEntries(MODS[m].fields.filter(f=>f.t!=='calc').map(f=>[f.l,f.t==='num'?(r[f.k]===''||r[f.k]==null?'':num(r[f.k])):(r[f.k]??'')]))}
 function fromRow(m,row){const map={};Object.keys(row).forEach(h=>map[nrm(h)]=row[h]);
  const d={id:'i'+(S.seq++)+Date.now().toString(36)};
  MODS[m].fields.forEach(f=>{const v=map[nrm(f.l)];d[f.k]=v==null?'':String(v).trim()});
  d.total=num(d.unitCost)*num(d.qty);return d}
-const apiUrl=a=>S.cfg.url+(S.cfg.url.includes('?')?'&':'?')+'action='+a+'&token='+encodeURIComponent(S.cfg.token);
-async function pull(auto){
- if(!S.cfg.url)return;sync.state='load';badge();
+
+async function api(body){
+ const r=await fetch(cfg.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({...body,session:cfg.session})});
+ const j=await r.json();
+ if(j.error&&/session expired/i.test(j.error)){forget();loginView('login','Session expired. Please log in again.')}
+ return j}
+function forget(){cfg.session='';cfg.user='';cfg.role='';saveCfg();S.region=[];S.lab=[];sync={state:'off',msg:'',rev:null,busy:false,dirty:false,t:null}}
+
+function loginView(mode,msg,user){
+ document.body.classList.add('locked');const setup=mode==='setup';
+ lg.innerHTML=`<form class="card" onsubmit="return doLogin(event,'${mode}')">
+  <h2 style="margin-top:0">📦 Inventory System</h2>
+  <p style="color:var(--mute);margin:0">${setup?'First-time setup: create the Admin account.':'Please log in.'}</p>
+  ${msg?`<p style="color:${/^Connecting/.test(msg)?'var(--mute)':'var(--bad)'}">${esc(msg)}</p>`:''}
+  ${setup?`<label>Setup key (SETUP_KEY from Code.gs)</label><input id="lk" type="password" autocomplete="off" required>`:''}
+  <label>Username</label><input id="lu" autocomplete="username" value="${esc(user||'')}" required>
+  <label>Password</label><input id="lp" type="password" autocomplete="${setup?'new-password':'current-password'}" required>
+  ${setup?`<label>Confirm password (min. 8 characters)</label><input id="lp2" type="password" autocomplete="new-password" required>`:''}
+  <div class="mf" style="justify-content:flex-start"><button class="b p">${setup?'Create admin & log in':'Log in'}</button></div>
+  <details style="margin-top:8px"><summary style="cursor:pointer;color:var(--mute)">Connection settings</summary>
+   <label>Web app URL</label><input id="lurl" value="${esc(cfg.url)}"></details></form>`}
+async function doLogin(e,mode){
+ e.preventDefault();cfg.url=lurl.value.trim();saveCfg();
+ const setup=mode==='setup';
+ const u0=lu.value;
+ if(setup&&lp.value!==lp2.value){loginView('setup','Passwords do not match.',u0);return false}
  try{
-  const j=await (await fetch(apiUrl('all'))).json();
-  if(j.error)throw new Error(j.error);
-  const remoteN=(j.region||[]).length+(j.lab||[]).length;
-  if(!remoteN&&(S.region.length+S.lab.length)>0){
-   if(confirm('The Google Sheet is empty but you have local data. Upload local data to the Sheet?')){sync.pulled=true;await push();return}
-   sync.pulled=true;sync.state='ok';badge();return}
-  ['region','lab'].forEach(m=>{S[m]=(j[m]||[]).map(r=>fromRow(m,r))});
-  MASTER_DEFS.forEach(([k,l])=>{const v=(j.master||{})[l];if(v&&v.length)S.master[k]=v});
-  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
-  sync.pulled=true;sync.state='ok';sync.msg='Loaded '+new Date().toLocaleTimeString();badge();render();
- }catch(e){sync.state='err';sync.msg=String(e.message||e);badge();if(!auto)alert('Could not load from Google Sheet:\n'+sync.msg)}
-}
+  const j=await api(setup?{action:'setup',key:lk.value,username:lu.value,password:lp.value}:{action:'login',username:lu.value,password:lp.value});
+  if(j.error){loginView(mode,j.error,u0);return false}
+  cfg.session=j.session;cfg.user=j.user;cfg.role=j.role;saveCfg();enterApp();
+ }catch(err){loginView(mode,'Cannot reach the server: '+err.message,u0)}
+ return false}
+async function boot(){
+ loginView('login','Connecting…');
+ try{
+  const st=await api({action:'status'});if(st.error)throw new Error(st.error);
+  if(st.needsSetup){loginView('setup');return}
+  if(cfg.session){const j=await api({action:'me'});if(j.ok){cfg.user=j.user;cfg.role=j.role;saveCfg();return enterApp()}}
+  loginView('login');
+ }catch(err){loginView('login','Cannot reach the server: '+err.message)}}
+async function enterApp(){
+ document.body.classList.remove('locked');tab='dash';
+ try{await pull()}catch(err){sync.state='err';sync.msg=err.message;badge()}
+ render();badge()}
+async function logout(){try{await api({action:'logout'})}catch(e){}forget();loginView('login')}
+
+async function pull(){
+ sync.state='load';badge();
+ const j=await api({action:'load'});if(j.error)throw new Error(j.error);
+ ['region','lab'].forEach(m=>{S[m]=(j[m]||[]).map(r=>fromRow(m,r))});
+ MASTER_DEFS.forEach(([k,l])=>{const v=(j.master||{})[l];if(v&&v.length)S.master[k]=v});
+ cfg.role=j.role;sync.rev=j.rev;sync.state='ok';sync.msg='Loaded '+new Date().toLocaleTimeString();badge()}
 async function push(){
- if(!S.cfg.url||!sync.pulled)return;
- try{
-  const body={token:S.cfg.token,region:S.region.map(r=>toRow('region',r)),lab:S.lab.map(r=>toRow('lab',r)),
-   master:Object.fromEntries(MASTER_DEFS.map(([k,l])=>[l,S.master[k]]))};
-  const j=await (await fetch(S.cfg.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)})).json();
+ if(!isAdmin()||sync.rev==null)return;
+ if(sync.busy){sync.dirty=true;return}
+ sync.busy=true;
+ try{do{
+  sync.dirty=false;
+  const j=await api({action:'save',baseRev:sync.rev,region:S.region.map(r=>toRow('region',r)),lab:S.lab.map(r=>toRow('lab',r)),
+   master:Object.fromEntries(MASTER_DEFS.map(([k,l])=>[l,S.master[k]]))});
+  if(j.conflict){sync.dirty=false;sync.busy=false;alert('Someone else changed the data (or the Sheet was edited). The latest data was loaded — please redo your last change.');await pull();render();return}
   if(j.error)throw new Error(j.error);
-  sync.state='ok';sync.msg='Saved '+new Date().toLocaleTimeString();
- }catch(e){sync.state='err';sync.msg=String(e.message||e)}
- badge();
-}
-function schedulePush(){if(!S.cfg||!S.cfg.url||!sync.pulled)return;clearTimeout(sync.t);sync.state='pending';badge();sync.t=setTimeout(push,1500)}
-function vSheet(){
- main.innerHTML=`<div class="card" style="max-width:760px"><h2 style="margin-top:0">Google Sheet Connection</h2>
- <p style="color:var(--mute)">Paste the <b>Web app URL</b> from your Apps Script deployment and the same <b>password (TOKEN)</b> you set in Code.gs.</p>
- <label style="font-weight:600;font-size:12px">Web app URL</label><input id="cu" placeholder="https://script.google.com/macros/s/.../exec" value="${esc(S.cfg.url)}">
- <label style="font-weight:600;font-size:12px;display:block;margin-top:10px">Password (TOKEN)</label><input id="ct" type="password" value="${esc(S.cfg.token)}">
- <div class="mf" style="justify-content:flex-start"><button class="b p" onclick="saveCfg()">💾 Save &amp; Connect</button>
- <button class="b" onclick="pull()">⬇ Load from Sheet</button><button class="b" onclick="sync.pulled=true;push().then(()=>alert(sync.state==='ok'?'Uploaded to Google Sheet ✔':'Failed: '+sync.msg))">⬆ Upload to Sheet</button>
- <button class="b d" onclick="disconnect()">Disconnect</button></div>
- <p style="color:var(--mute);margin-bottom:0">Once connected: data loads from the Sheet when you open the page, and every change is saved to the Sheet automatically.</p></div>`}
-function saveCfg(){S.cfg.url=document.getElementById('cu').value.trim();S.cfg.token=document.getElementById('ct').value.trim();
- try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}sync.pulled=false;pull()}
-function disconnect(){S.cfg={url:'',token:''};sync={state:'off',msg:'',pulled:false,t:null};try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}badge();vSheet()}
+  sync.rev=j.rev;sync.state='ok';sync.msg='Saved '+new Date().toLocaleTimeString();
+ }while(sync.dirty)}catch(e){sync.state='err';sync.msg=String(e.message||e)}
+ sync.busy=false;badge()}
+function schedulePush(){if(!isAdmin()||sync.rev==null)return;clearTimeout(sync.t);sync.state='pending';badge();sync.t=setTimeout(push,1500)}
+
+/* ---- Users (admin) ---- */
+async function vUsers(){
+ if(!isAdmin())return go('dash');
+ main.innerHTML='<div class="card empty">Loading users…</div>';
+ const j=await api({action:'users.list'});if(j.error){main.innerHTML=`<div class="card empty">${esc(j.error)}</div>`;return}
+ main.innerHTML=`<div class="card"><h2 style="margin-top:0">Users</h2>
+  <p style="color:var(--mute)"><b>Admin</b> = full access. <b>Staff</b> = view and print only (cannot add, update or delete).</p>
+  <div class="tw"><table><thead><tr><th>Username</th><th>Role</th><th>Active</th><th></th></tr></thead><tbody>
+  ${j.users.map(u=>`<tr><td>${esc(u.username)}</td>
+   <td><select onchange="userAct('${esc(u.username)}',{role:this.value})" style="width:auto"><option value="staff" ${u.role==='staff'?'selected':''}>Staff</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></td>
+   <td><input type="checkbox" style="width:auto" ${u.active?'checked':''} onchange="userAct('${esc(u.username)}',{active:this.checked})"></td>
+   <td><button class="b" onclick="resetPw('${esc(u.username)}')">Reset password</button> <button class="b d" onclick="delUser('${esc(u.username)}')">🗑</button></td></tr>`).join('')}
+  </tbody></table></div></div>
+  <div class="card" style="max-width:520px"><h3 style="margin-top:0">Add user</h3>
+  <form onsubmit="return addUser(event)"><div class="fg" style="grid-template-columns:1fr">
+   <div><label>Username</label><input id="nu" autocomplete="off" required></div>
+   <div><label>Password (min. 8 characters)</label><input id="np" type="text" autocomplete="off" required></div>
+   <div><label>Role</label><select id="nr"><option value="staff">Staff (view only)</option><option value="admin">Admin (full access)</option></select></div></div>
+  <div class="mf" style="justify-content:flex-start"><button class="b p">＋ Add user</button></div></form></div>`}
+async function userAct(u,patch){const j=await api({action:'users.update',username:u,...patch});if(j.error)alert(j.error);vUsers()}
+async function resetPw(u){const p=prompt('New password for '+u+' (min. 8 characters):');if(!p)return;const j=await api({action:'users.update',username:u,password:p});alert(j.error||'Password changed ✔')}
+async function delUser(u){if(!confirm('Delete user '+u+'?'))return;const j=await api({action:'users.delete',username:u});if(j.error)alert(j.error);vUsers()}
+async function addUser(e){e.preventDefault();const j=await api({action:'users.add',username:nu.value,password:np.value,role:nr.value});if(j.error)alert(j.error);else alert('User added ✔');vUsers();return false}
+
+/* ---- My account ---- */
+function vAcct(){
+ main.innerHTML=`<div class="card" style="max-width:520px"><h2 style="margin-top:0">My Account</h2>
+ <p>Logged in as <b>${esc(cfg.user)}</b> — ${isAdmin()?'Admin (full access)':'Staff (view and print only)'}</p>
+ <form onsubmit="return changePw(event)"><div class="fg" style="grid-template-columns:1fr">
+  <div><label>Current password</label><input id="op" type="password" autocomplete="current-password" required></div>
+  <div><label>New password (min. 8 characters)</label><input id="npw" type="password" autocomplete="new-password" required></div></div>
+  <div class="mf" style="justify-content:flex-start"><button class="b p">Change password</button></div></form></div>`}
+async function changePw(e){e.preventDefault();const j=await api({action:'changePassword',oldPassword:op.value,newPassword:npw.value});alert(j.error||'Password changed ✔');if(!j.error){op.value='';npw.value=''}return false}
 
 modal.addEventListener('click',e=>{if(e.target===modal)closeM()});
-render();badge();if(S.cfg&&S.cfg.url)pull(true);
+badge();boot();
 </script>
 </body>
 </html>
