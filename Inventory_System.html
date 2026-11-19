@@ -227,7 +227,7 @@ function vIcf(){
   <select onchange="icf.sec=this.value;vIcf()" title="Division/Section">${opt(secs,icf.sec)}</select>
   ${pcSel(pcs(icf.m),icf.pc,"icf.pc=this.value;vIcf()")}
   <select onchange="icf.cat=this.value;vIcf()" title="Class (PPE / ICS)"><option value="">All classes</option>${cats.map(x=>`<option ${x===icf.cat?'selected':''}>${x}</option>`).join('')}</select>
-  <button class="b p" onclick="window.print()">🖨 Print</button></div>
+  <button class="b" onclick="downloadIcf()">⬇ Download Excel</button><button class="b p" onclick="window.print()">🖨 Print</button></div>
   <div class="bar"><input placeholder="PPE Account Group" value="${esc(icf.ppe)}" oninput="icf.ppe=this.value">
   <input placeholder="Prepared by" value="${esc(sig.p)}" oninput="sig.p=this.value"><input placeholder="Verified by" value="${esc(sig.v)}" oninput="sig.v=this.value">
   <input placeholder="Reviewed by (Chairman)" value="${esc(sig.r)}" oninput="sig.r=this.value">
@@ -242,6 +242,59 @@ function vIcf(){
   <div>Verified by:<div>${esc(sig.v)}</div>Print Name and Signature<br>Concerned Inventory<br>Committee Member</div>
   <div>Reviewed by:<div>${esc(sig.r)}</div>Print Name and Signature<br>Chairman, Inventory<br>Committee</div>
   <div>Witnessed by:<div>${esc(sig.w)}</div>Print Name and Signature<br>COA Auditor / Representative</div></div></div>`;
+}
+
+
+/* ========= DOWNLOAD INVENTORY COUNT FORM AS EXCEL ========= */
+function loadScript(src){return new Promise((ok,no)=>{const x=document.createElement('script');x.src=src;x.onload=ok;x.onerror=()=>{x.remove();no(new Error('load failed'))};document.head.appendChild(x)})}
+async function downloadIcf(){
+ try{
+  if(!window.ExcelJS){
+   try{await loadScript('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js')}
+   catch(e){await loadScript('https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js')}
+  }
+ }catch(e){return alert('Could not load the Excel library (internet required).')}
+ const lab=icf.m==='lab';
+ const rows=S[icf.m].filter(r=>(!icf.sec||r.section===icf.sec)&&(!icf.cat||cls(r)===icf.cat)&&(!icf.pc||pcOf(r)===icf.pc));
+ const heads=['No.','Article/Item','Description','Old Prop. No.','New Prop. No.','Unit of Measurement','Unit Value','Qty. per Property Card','Qty. per Physical Count','Location / Whereabouts','Condition','Remarks',...(lab?[]:['Property Category'])];
+ const widths=[6,20,42,15,20,13,14,13,13,22,14,22,...(lab?[]:[18])];
+ const n=heads.length,thin={style:'thin',color:{argb:'FF000000'}},box={top:thin,left:thin,bottom:thin,right:thin};
+ const wb=new ExcelJS.Workbook(),ws=wb.addWorksheet('Inventory Count Form',{pageSetup:{orientation:'landscape',paperSize:9,fitToPage:true,fitToWidth:1,fitToHeight:0,margins:{left:.4,right:.4,top:.5,bottom:.5,header:.3,footer:.3}}});
+ ws.columns=widths.map(w=>({width:w}));
+ let r=1;
+ const merged=(row,c1,c2,val,o={})=>{ws.mergeCells(row,c1,row,c2);const c=ws.getCell(row,c1);c.value=val;c.font={name:'Arial',size:o.size||10,bold:!!o.bold};c.alignment={horizontal:o.h||'left',vertical:'middle',wrapText:true};
+  if(o.border)for(let k=c1;k<=c2;k++)ws.getCell(row,k).border=o.border;return c};
+ if(lab){merged(r,1,n,'MINISTRY OF SCIENCE AND TECHNOLOGY',{bold:1,size:12,h:'center'});r++}
+ merged(r,1,n,'Inventory Count Form',{bold:1,size:14,h:'center'});r++;
+ r++;
+ const q=Math.floor(n/4),g=[0,1,2,3].map(i=>[1+i*q,i===3?n:(i+1)*q]);
+ merged(r,g[0][0],g[0][1],'PPE Account Group: '+(icf.ppe||MODS[icf.m].group),{bold:1});
+ merged(r,g[1][0],g[1][1],'Category: '+(icf.cat||'PPE / ICS'),{bold:1});
+ merged(r,g[2][0],g[2][1],'Property Category: '+(icf.pc||'ALL'),{bold:1});
+ merged(r,g[3][0],g[3][1],'Division / Section: '+(icf.sec||'ALL'),{bold:1});r++;
+ merged(r,g[3][0],g[3][1],'Sheet No. ____ of ____',{h:'right'});r++;
+ r++;
+ const hr=r;ws.getRow(hr).height=46;
+ heads.forEach((h,i)=>{const c=ws.getCell(hr,i+1);c.value=h;c.font={name:'Arial',size:9,bold:true};c.alignment={horizontal:'center',vertical:'middle',wrapText:true};c.border=box;c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD9D9D9'}}});
+ r++;
+ const nv=v=>(v===''||v==null||isNaN(parseFloat(v)))?'':parseFloat(v);
+ rows.forEach((x,i)=>{
+  const vals=[i+1,x.article||'',x.description||'',x.oldNo||'',x.propNumber||x.propNo||'',x.uom||'',nv(x.unitCost),nv(x.qty),nv(x.physical),x.location||'',x.condition||'',x.remarks||'',...(lab?[]:[x.category||''])];
+  vals.forEach((v,k)=>{const c=ws.getCell(r,k+1);c.value=v;c.font={name:'Arial',size:9};c.border=box;
+   c.alignment={vertical:'middle',wrapText:true,horizontal:[0,7,8].includes(k)?'center':(k===6?'right':'left')};if(k===6)c.numFmt='#,##0.00'});
+  r++});
+ if(!rows.length){merged(r,1,n,'No items for the selected filter',{h:'center',border:box});r++}
+ ws.pageSetup.printTitlesRow=hr+':'+hr;
+ r+=2;
+ const sg=[['Prepared by:',sig.p,'Concerned Inventory','Committee Member'],['Verified by:',sig.v,'Concerned Inventory','Committee Member'],['Reviewed by:',sig.r,'Chairman, Inventory','Committee'],['Witnessed by:',sig.w,'COA Auditor / Representative','']];
+ sg.forEach((x,i)=>{const [a,b]=g[i];
+  merged(r,a,b,x[0],{h:'center'});
+  ws.getRow(r+1).height=34;merged(r+1,a,b,x[1]||'',{bold:1,h:'center',border:{bottom:thin}});
+  merged(r+2,a,b,'Print Name and Signature',{h:'center'});merged(r+3,a,b,x[2],{h:'center'});merged(r+4,a,b,x[3],{h:'center'})});
+ const buf=await wb.xlsx.writeBuffer();
+ const name='Inventory_Count_Form_'+(lab?'LAB':'REGION')+'_'+(icf.pc||'ALL').replace(/[^A-Za-z0-9]+/g,'-')+'_'+new Date().toISOString().slice(0,10)+'.xlsx';
+ const url=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+ const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
 
 /* ========= STICKERS ========= */
