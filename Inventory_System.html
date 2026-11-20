@@ -2611,7 +2611,10 @@ let sk={m:'lab',sec:'',cls:'',pc:''};
 const stkHead=()=>{try{return JSON.parse(localStorage.getItem('inventory_stk_head')||'null')||{a:'Republic of the Philippines',b:'Ministry of Science and Technology'}}catch(e){return{a:'Republic of the Philippines',b:'Ministry of Science and Technology'}}};
 function setStkHead(k,v){const h=stkHead();h[k]=v;try{localStorage.setItem('inventory_stk_head',JSON.stringify(h))}catch(e){}
  document.querySelectorAll('.st2 .hd'+k).forEach(x=>x.textContent=v)}
-function qrSvg(text){try{const q=qrcode(0,'M');q.addData(String(text));q.make();return q.createSvgTag({scalable:true,margin:0})}catch(e){return''}}
+function stkText(r){const no=r.propNumber||r.propNo||'';
+ return [no,['Articles',r.description||r.article],['SN',r.serial],['ICS',r.ics],['Location',r.location],['End User',r.endUser],['Accountable',r.accountable],['Date Acquired',fmtDate(r.dateAcq)]]
+  .map(x=>Array.isArray(x)?(x[1]?x[0]+': '+x[1]:''):x).filter(Boolean).join('\n').slice(0,320)}
+function qrSvg(text){try{const q=qrcode(0,'L');q.addData(String(text));q.make();return q.createSvgTag({scalable:true,margin:0})}catch(e){return''}}
 function fmtDate(v){if(!v)return'';const d=new Date(v+'T00:00:00');return isNaN(d)?v:d.toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'})}
 function vStk(){
  const secs=[...new Set(S[sk.m].map(r=>r.section).filter(Boolean))];
@@ -2622,13 +2625,13 @@ function vStk(){
   <select onchange="sk.sec=this.value;vStk()"><option value="">All Sections</option>${secs.map(x=>`<option ${x===sk.sec?'selected':''}>${esc(x)}</option>`).join('')}</select>
   ${pcSel(pcs(sk.m),sk.pc,"sk.pc=this.value;vStk()")}<select onchange="sk.cls=this.value;vStk()"><option value="">PPE + ICS</option><option ${sk.cls==='PPE'?'selected':''}>PPE</option><option ${sk.cls==='ICS'?'selected':''}>ICS</option></select><button class="b p" onclick="window.print()">🖨 Print Stickers</button></div>
   <div class="bar stctl"><small style="color:var(--mute)">Sticker header:</small><input value="${esc(hd.a)}" oninput="setStkHead('a',this.value)"><input value="${esc(hd.b)}" oninput="setStkHead('b',this.value)">
-  <small style="color:var(--mute)">Print on A4 (2 columns × 6 rows). In the print dialog set Margins: Default/None and Scale: 100%. The QR code contains the Property Number.</small></div></div>
+  <small style="color:var(--mute)">Print on A4 (2 columns × 6 rows). In the print dialog set Margins: Default/None and Scale: 100%. Scanning the QR code shows the same details printed on the sticker.</small></div></div>
   <div class="stk stkpage">${rows.map(r=>{const no=r.propNumber||r.propNo||'';return`<div class="st2"><img class="wm" src="${LOGO}" alt=""><div class="hd"><div class="hda">${esc(hd.a)}</div><b class="hdb">${esc(hd.b)}</b></div>
   <div class="bd"><div class="tx"><div class="no">${esc(no)}</div>
    <div><b>Articles:</b> ${esc(r.description||r.article)}</div><div><b>SN:</b> ${esc(r.serial)}</div><div><b>ICS:</b> ${esc(r.ics)}</div>
    <div><b>Location:</b> ${esc(r.location)}</div><div><b>End User:</b> ${esc(r.endUser)}</div><div><b>Accountable:</b> ${esc(r.accountable)}</div>
    <div><b>Date Acquired:</b> ${esc(fmtDate(r.dateAcq))}</div></div>
-   <div class="qr">${no?qrSvg(no):''}</div></div>
+   <div class="qr">${no?qrSvg(stkText(r)):''}</div></div>
   <div class="sg"><span>COA Representative</span><span>Property Custodian</span><span>Inventory Representative</span></div></div>`}).join('')||'<div class="card empty">No items</div>'}</div>`;
 }
 
