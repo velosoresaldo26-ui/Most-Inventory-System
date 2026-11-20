@@ -2619,8 +2619,8 @@ async function publicItem(){
  document.body.classList.remove('locked');document.body.classList.add('itemmode','public');tab='item';
  main.innerHTML='<div class="card empty">Loading sticker…</div>';
  try{
-  const j=await api({action:'public.item',item:pendingItem});
-  if(j.error)throw new Error(j.error);
+  const j=await (await fetch(cfg.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'public.item',item:pendingItem})})).json();
+  if(j.error)throw new Error(/session expired|unknown action/i.test(j.error)?'The server has not been updated yet (Code.gs v2.2). Admin: paste the new Code.gs and deploy a New version.':j.error);
   pub=(j.items||[]).map(r=>fromRow('lab',r));vItem();
  }catch(e){pub=[];vItem();main.insertAdjacentHTML('afterbegin',`<div class="card empty" style="color:var(--bad)">Could not load: ${esc(e.message)}</div>`)}}
 function leavePublic(){pub=null;pendingItem='';pendingItem0='';document.body.classList.remove('public','itemmode');try{history.replaceState(null,'',location.pathname)}catch(e){}boot()}
