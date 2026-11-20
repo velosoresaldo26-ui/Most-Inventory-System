@@ -2705,10 +2705,12 @@ function importXlsx(inp){
 }
 
 /* ========= LOGIN + GOOGLE SHEET ========= */
-const DEFAULT_URL='https://script.google.com/macros/s/AKfycbzmxAhvXLnlZLzdx36eO0GixQChUscMMGQEI2mguGb83tpnFFOLPsGFJH5EkY5_nmCB7w/exec';
+const DEFAULT_URL='https://script.google.com/macros/s/AKfycbxvvDBST4xzRuj2xm5hwzMXgVa_UPLZWHmgAKk4TdAjl7CHfVzr8X8tjsc-G_W8ISspHA/exec';
+const OLD_URLS=['https://script.google.com/macros/s/AKfycbzmxAhvXLnlZLzdx36eO0GixQChUscMMGQEI2mguGb83tpnFFOLPsGFJH5EkY5_nmCB7w/exec','https://script.google.com/macros/s/AKfycbzQExjAV4_x9fSjd11wFUGkLpBz_6KoJMtXpmGrgNmIyyZJvsMcGTjpe3PIGCjfF1R6Tw/exec'];
 const CFGKEY='inventory_cfg_v2';
 let cfg={url:DEFAULT_URL,session:'',user:'',role:''};
 try{Object.assign(cfg,JSON.parse(localStorage.getItem(CFGKEY)||'{}'));localStorage.removeItem(KEY)}catch(e){}
+if(OLD_URLS.includes(cfg.url))cfg.url=DEFAULT_URL;
 const saveCfg=()=>{try{localStorage.setItem(CFGKEY,JSON.stringify(cfg))}catch(e){}};
 let sync={state:'off',msg:'',rev:null,busy:false,dirty:false,t:null};
 const nrm=s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,'');
