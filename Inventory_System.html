@@ -67,7 +67,7 @@ tr:hover td{background:#fafbfe}
 .st2>*:not(.wm){position:relative;z-index:1}
 .stctl input{width:auto;min-width:230px}
 #lg{display:none;min-height:80vh;align-items:center;justify-content:center;padding:16px}
-.itemmode nav{display:none}.locked #lg{display:flex}.locked nav,.locked main,.locked #syncb{display:none}
+.itemmode nav{display:none}.public #syncb,.public header small{display:none}.locked #lg{display:flex}.locked nav,.locked main,.locked #syncb{display:none}
 #lg .card{width:min(420px,100%);margin:0}#lg label{display:block;font-size:12px;font-weight:600;color:var(--mute);margin:10px 0 3px}
 .who{font-size:13px;color:var(--mute);align-self:center;padding:0 6px}
 @page{size:A4 landscape;margin:10mm}
@@ -2423,7 +2423,7 @@ const TABLE_COLS={region:['propNo','accountable','section','endUser','category',
 const KEY='inventory_system_v1';
 let S={region:[],lab:[],master:JSON.parse(JSON.stringify(MASTER_DEFAULT)),seq:1};
 const save=()=>{schedulePush()};
-let tab='dash';const pendingItem0=new URLSearchParams(location.search).get('item')||'';let pendingItem=pendingItem0;const filt={region:{q:'',sec:'',cond:'',cls:'',pc:''},lab:{q:'',sec:'',cond:'',cls:'',pc:''}};
+let tab='dash';let pendingItem0=new URLSearchParams(location.search).get('item')||'';let pendingItem=pendingItem0;const filt={region:{q:'',sec:'',cond:'',cls:'',pc:''},lab:{q:'',sec:'',cond:'',cls:'',pc:''}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=v=>parseFloat(v)||0;
 const money=v=>'₱'+num(v).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -2609,11 +2609,21 @@ async function downloadIcf(){
 /* ========= ITEM PAGE (opened from QR code) ========= */
 function vItem(){
  const key=pendingItem.trim().toLowerCase();
- const found=[...S.region.map(r=>({r,m:'region'})),...S.lab.map(r=>({r,m:'lab'}))].filter(x=>String(x.r.propNumber||x.r.propNo||'').trim().toLowerCase()===key);
+ const found=pub?pub.map(r=>({r})):[...S.region.map(r=>({r,m:'region'})),...S.lab.map(r=>({r,m:'lab'}))].filter(x=>String(x.r.propNumber||x.r.propNo||'').trim().toLowerCase()===key);
  const z=Math.min(1.7,Math.max(.6,(Math.min(innerWidth,900)-36)/370));
  main.innerHTML=`<div class="card noprint" style="max-width:640px;margin:0 auto 14px"><div class="bar" style="margin:0"><h3 style="margin:0">Item: ${esc(pendingItem)}</h3><span class="sp"></span>
-   ${found.length?`<button class="b p" onclick="window.print()">🖨 Print sticker</button>`:''}<button class="b" onclick="closeItem()">Open full system</button></div></div>
+   ${found.length&&!pub?`<button class="b p" onclick="window.print()">🖨 Print sticker</button>`:''}${pub?`<button class="b" onclick="leavePublic()">Staff login</button>`:`<button class="b" onclick="closeItem()">Open full system</button>`}</div></div>
   <div class="stkpage" style="display:flex;flex-direction:column;align-items:center;gap:14px">${found.length?found.map(x=>`<div style="zoom:${z}">${stickerHtml(x.r)}</div>`).join(''):'<div class="card empty">Item not found. It may have been removed or its Property Number changed.</div>'}</div>`}
+let pub=null;
+async function publicItem(){
+ document.body.classList.remove('locked');document.body.classList.add('itemmode','public');tab='item';
+ main.innerHTML='<div class="card empty">Loading sticker…</div>';
+ try{
+  const j=await api({action:'public.item',item:pendingItem});
+  if(j.error)throw new Error(j.error);
+  pub=(j.items||[]).map(r=>fromRow('lab',r));vItem();
+ }catch(e){pub=[];vItem();main.insertAdjacentHTML('afterbegin',`<div class="card empty" style="color:var(--bad)">Could not load: ${esc(e.message)}</div>`)}}
+function leavePublic(){pub=null;pendingItem='';pendingItem0='';document.body.classList.remove('public','itemmode');try{history.replaceState(null,'',location.pathname)}catch(e){}boot()}
 function closeItem(){pendingItem='';try{history.replaceState(null,'',location.pathname)}catch(e){}go('dash')}
 
 /* ========= STICKERS ========= */
@@ -2645,7 +2655,7 @@ function vStk(){
   <select onchange="sk.sec=this.value;vStk()"><option value="">All Sections</option>${secs.map(x=>`<option ${x===sk.sec?'selected':''}>${esc(x)}</option>`).join('')}</select>
   ${pcSel(pcs(sk.m),sk.pc,"sk.pc=this.value;vStk()")}<select onchange="sk.cls=this.value;vStk()"><option value="">PPE + ICS</option><option ${sk.cls==='PPE'?'selected':''}>PPE</option><option ${sk.cls==='ICS'?'selected':''}>ICS</option></select><button class="b p" onclick="window.print()">🖨 Print Stickers</button></div>
   <div class="bar stctl"><small style="color:var(--mute)">Sticker header:</small><input value="${esc(hd.a)}" oninput="setStkHead('a',this.value)"><input value="${esc(hd.b)}" oninput="setStkHead('b',this.value)">
-  <small style="color:var(--mute)">Print on A4 (2 columns × 6 rows). In the print dialog set Margins: Default/None and Scale: 100%. The QR code opens this item's sticker page (login required).</small></div></div>
+  <small style="color:var(--mute)">Print on A4 (2 columns × 6 rows). In the print dialog set Margins: Default/None and Scale: 100%. The QR code opens this item's sticker page (public, no login).</small></div></div>
   <div class="stk stkpage">${rows.map(stickerHtml).join('')||'<div class="card empty">No items</div>'}</div>`;
 }
 
@@ -2743,6 +2753,7 @@ async function doLogin(e,mode){
  }catch(err){loginView(mode,'Cannot reach the server: '+err.message,u0)}
  return false}
 async function boot(){
+ if(pendingItem0)return publicItem();
  loginView('login','Connecting…');
  try{
   const st=await api({action:'status'});if(st.error)throw new Error(st.error);
