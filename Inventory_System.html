@@ -65,7 +65,7 @@ tr:hover td{background:#fafbfe}
 .st2 .bd{align-items:center}.st2 .cl{flex:1;text-align:center;font:800 40pt Arial,Helvetica,sans-serif;letter-spacing:3px}.st2 .qr svg{width:100%;height:100%;display:block}
 .st2 .sg{display:flex;gap:4mm;margin-top:auto;padding-top:1mm;font-size:6pt;text-align:center}.st2 .sg span{flex:1;border-top:1px solid #000;padding-top:.6mm}
 .st2 .wm{position:absolute;left:50%;top:50%;width:3cm;height:auto;transform:translate(-50%,-50%);opacity:.24;pointer-events:none}
-.st2>*{position:relative;z-index:1}.st2 .cl{position:relative;align-self:stretch;display:flex;align-items:center;justify-content:center}.st2 .cl span{position:relative;z-index:2}
+.st2>*{position:relative;z-index:1}.st2 .cl{position:relative;align-self:stretch;display:flex;align-items:center;justify-content:center;flex-direction:column}.st2 .cl .sc{position:relative;z-index:2;font:700 10pt Arial,Helvetica,sans-serif;letter-spacing:0;font-style:normal;margin-top:1.5mm;line-height:1.1;word-break:break-word;max-width:100%}.st2 .cl span{position:relative;z-index:2}
 .stctl input{width:auto;min-width:230px}
 .st2.det{width:100%;max-width:560px;height:auto;padding:14px 16px 12px}
 .det .hd{font-size:13px}.det .hd b{font-size:16px}
@@ -2657,7 +2657,7 @@ function fmtDate(v){if(!v)return'';const d=new Date(v+'T00:00:00');return isNaN(
 const baseUrl=()=>/^https?:$/.test(location.protocol)?location.origin+location.pathname:'https://velosoresaldo26-ui.github.io/Most-Inventory-System/Inventory_System.html';
 const itemUrl=r=>baseUrl()+'?item='+encodeURIComponent(r.propNumber||r.propNo||'');
 function stickerHtml(r){const no=r.propNumber||r.propNo||'';const hd=stkHead();const c=r._cls||cls(r);return`<div class="st2"><div class="hd"><div class="hda">${esc(hd.a)}</div><b class="hdb">${esc(hd.b)}</b></div>
-  <div class="bd"><div class="cl"><img class="wm" src="${LOGO}" alt=""><span>${esc(c)}</span></div><div class="qr">${no?qrSvg(itemUrl(r)):''}</div></div></div>`}
+  <div class="bd"><div class="cl"><img class="wm" src="${LOGO}" alt=""><span>${esc(c)}</span>${r.section?`<em class="sc">${esc(r.section)}</em>`:''}</div><div class="qr">${no?qrSvg(itemUrl(r)):''}</div></div></div>`}
 function stickerDetailHtml(r){const no=r.propNumber||r.propNo||'';const hd=stkHead();const c=r._cls||cls(r);
  return`<div class="st2 det"><img class="wm" src="${LOGO}" alt=""><div class="hd"><div class="hda">${esc(hd.a)}</div><b class="hdb">${esc(hd.b)}</b></div>
   <div class="bd"><div class="tx"><div class="no"><span class="n">${esc(no)}</span>${c?`<span class="cb">${esc(c)}</span>`:''}</div>
