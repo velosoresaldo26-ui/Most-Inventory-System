@@ -93,10 +93,71 @@ tr:hover td{background:#fafbfe}
  .pk input{display:none!important}.printsel main{display:none!important}.printsel #pa{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(9.8cm,9.8cm))}
  .stkpage{page:stk}.stk{gap:2mm}.stkpage>div{zoom:1!important}
 }
+
+/* ===== THEME v2 (green) ===== */
+:root{--pri:#0f7a45;--pri2:#e1f3e8;--ink:#14231c;--mute:#5d6d65;--line:#dbe6df;--bg:#f2f6f4;--g0:#062e22;--g1:#0b4a34}
+body{background:var(--bg);position:relative;min-height:100vh}
+body::before{content:'';position:fixed;left:0;right:0;bottom:0;height:200px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='260' viewBox='0 0 1600 260' preserveAspectRatio='none'%3E%3Cpath d='M0 260V120C120 150 260 200 420 260z' fill='%230b4a34'/%3E%3Cpath d='M0 260V190C80 205 170 230 260 260z' fill='%232fa564'/%3E%3Cpath d='M1600 260V150C1500 175 1420 215 1360 260z' fill='%230b4a34'/%3E%3Cpath d='M1600 260V205C1550 220 1500 238 1460 260z' fill='%232fa564'/%3E%3C/svg%3E") bottom/100% 100% no-repeat;opacity:.9;pointer-events:none;z-index:0}
+header,nav,main,#lg{position:relative;z-index:1}
+header{background:linear-gradient(100deg,#04281d 0%,#0a4a35 55%,#0f6a43 100%);padding:14px 28px;gap:18px;overflow:hidden}
+header::before{content:'';position:absolute;right:16%;top:-60%;width:230px;height:260%;background:linear-gradient(180deg,rgba(76,190,110,.0),rgba(76,190,110,.38),rgba(76,190,110,0));transform:rotate(28deg);pointer-events:none}
+header::after{content:'';position:absolute;right:4%;top:-60%;width:90px;height:260%;background:rgba(76,190,110,.16);transform:rotate(28deg);pointer-events:none}
+header>*{position:relative;z-index:1}
+.brand{display:flex;align-items:center;gap:14px}.brand h1{font-size:21px;letter-spacing:.2px}
+header #syncb{margin-left:auto;border-radius:99px;padding:6px 14px;font-weight:600;font-size:12.5px;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
+header small{display:flex;color:#e3f3ea;font-size:13px;font-weight:500}header small span{padding:0 14px;border-left:1px solid rgba(255,255,255,.35)}header small span:first-child{border-left:0}
+nav{margin:14px 22px;border:1px solid #e4ece7;border-radius:18px;padding:8px 12px;gap:6px;align-items:center;background:rgba(255,255,255,.94);box-shadow:0 6px 18px rgba(8,60,40,.09);top:8px;backdrop-filter:blur(6px)}
+nav button{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:99px;color:#1c2b24;font-weight:600;font-size:13.5px;transition:background .15s,color .15s}
+nav button:hover{background:#eef6f1}
+nav button.on{background:linear-gradient(135deg,#0d7a46,#075b34);color:#fff;box-shadow:0 4px 10px rgba(7,91,52,.3)}
+nav .ic{width:17px;height:17px;flex:none}.ic.pesoi{font:700 18px/1 system-ui;width:auto;height:auto}
+nav button.b{border:0;background:none}nav button.b:hover{background:#eef6f1}
+nav button.lo{border:1px solid #f1b7b0;color:#c0392b;background:#fff;box-shadow:0 2px 6px rgba(192,57,43,.12)}nav button.lo:hover{background:#fdf0ee}
+.who{display:inline-flex;align-items:center;gap:6px;color:#1c2b24;font-weight:600}.who .ic{width:17px;height:17px;color:#0b4a34}
+main{padding:6px 24px 160px}
+.card{border-radius:16px;border:1px solid #e4ece7;box-shadow:0 4px 16px rgba(8,60,40,.06)}
+button.p{background:linear-gradient(135deg,#119257,#0a6a3d);border-color:#0a6a3d}button.p:hover{background:#0a6a3d}
+button.b:hover{background:#eef6f1}
+th{background:#eaf4ee;color:#38584a}tr:hover td{background:#f6fbf8}
+input:focus,select:focus,textarea:focus{outline:2px solid #53b97f;outline-offset:0;border-color:#53b97f}
+.tag.PPE{background:#e1f3e8;color:#0d6b3e}.tag.ICS{background:#e5edff;color:#2851b8}
+.kpis{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));margin:6px 0 20px}
+.kpi{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid #e4ece7;border-radius:18px;padding:12px 18px 12px 12px;box-shadow:0 6px 18px rgba(8,60,40,.08);min-height:104px}
+.ki{width:76px;height:80px;border-radius:16px;display:grid;place-items:center;color:#fff;flex:none;box-shadow:inset 0 -10px 18px rgba(0,0,0,.14)}
+.ki .ic{width:36px;height:36px}.ki .pesoi{font-size:38px}
+.ki.g1,.ki.g2,.ki.g3{background:linear-gradient(145deg,#1fa862,#0a5f37)}.ki.t1{background:linear-gradient(145deg,#1aa391,#0b6a62)}.ki.b1,.ki.b2{background:linear-gradient(145deg,#3b82f0,#1a4fb5)}.ki.r1{background:linear-gradient(145deg,#e5584a,#a82a20)}
+.kt{min-width:0}.kt span{display:block;font-size:11.5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:#4b5b53}.kt b{display:block;font-size:26px;line-height:1.25;color:#101b15;word-break:break-word}.kt small{color:#5d6d65;font-size:12.5px}
+.two{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-bottom:20px}
+.pnl{background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e4ece7;box-shadow:0 6px 18px rgba(8,60,40,.08)}
+.ph{display:flex;align-items:center;gap:12px;padding:13px 20px;color:#fff;position:relative;overflow:hidden;background:linear-gradient(100deg,#04281d,#0a4a35 70%)}
+.ph::after{content:'';position:absolute;right:-20px;top:0;bottom:0;width:170px;background:repeating-linear-gradient(115deg,rgba(60,190,100,.0) 0 9px,rgba(80,200,110,.55) 9px 17px);-webkit-mask:linear-gradient(90deg,transparent,#000);mask:linear-gradient(90deg,transparent,#000)}
+.ph h3{margin:0;font-size:18px;font-weight:650}.ph .ic{width:22px;height:22px}
+.pb{padding:14px 20px 18px}
+.crow{display:flex;align-items:center;gap:12px;max-width:430px;padding:7px 14px;margin:5px 0;border-radius:10px;background:#f3f6f5}
+.crow i{width:11px;height:11px;border-radius:50%;flex:none}.crow span{flex:1}.crow b{font-variant-numeric:tabular-nums}
+.sec{position:relative}.sec::after{content:'';position:absolute;right:22px;bottom:14px;width:210px;height:150px;opacity:.1;background:linear-gradient(#0b4a34,#0b4a34) 0 100%/38px 40% no-repeat,linear-gradient(#0b4a34,#0b4a34) 56px 100%/38px 60% no-repeat,linear-gradient(#0b4a34,#0b4a34) 112px 100%/38px 80% no-repeat,linear-gradient(#0b4a34,#0b4a34) 168px 100%/38px 100% no-repeat;pointer-events:none}
+.srow{margin:9px 0;font-size:16px}.srow em{font-style:normal;color:#8a968f;padding:0 4px}
+.how{border-left:6px solid #1fa862}.how .ph{background:linear-gradient(100deg,#04281d,#0a4a35 80%)}
+.how ol{margin:4px 0 8px;padding-left:22px;line-height:1.9}.mute{color:var(--mute);margin:4px 0 0}
+#lg .card{box-shadow:0 12px 34px rgba(8,60,40,.14)}
+@media(max-width:900px){header small{display:none}nav{margin:10px 10px}main{padding:6px 12px 150px}.ki{width:62px;height:66px}}
+@media print{body::before{display:none}header,nav{display:none!important}main{padding:0}.card{box-shadow:none}}
+
+nav{padding:7px 10px;gap:2px;margin:12px 18px}nav button{padding:8px 11px;gap:6px;font-size:13px}nav .ic{width:16px;height:16px}.who{font-size:13px;padding:0 8px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:12px}.kpi{gap:12px;padding:10px 12px 10px 10px;min-height:96px}
+.ki{width:62px;height:66px;border-radius:14px}.ki .ic{width:30px;height:30px}.ki .pesoi{font-size:32px}
+.kt span{font-size:10.5px}.kt b{font-size:clamp(17px,1.55vw,23px);white-space:nowrap}.kt small{font-size:12px}
+@media(max-width:900px){.kt b{white-space:normal}}
+
+nav button{padding:8px 9px;gap:5px;font-size:12.5px}nav button.nb{padding:8px 9px;font-size:12.5px}.who{font-size:12.5px;padding:0 6px;gap:5px}nav .sp{min-width:4px}
+.kpi{overflow:hidden}.kt{flex:1;min-width:0}.kt b{font-size:clamp(15px,1.28vw,21px)}.kt span{font-size:10px}
+
+.kpis{grid-template-columns:repeat(auto-fit,minmax(255px,1fr))}.kt b{font-size:22px}.kt span{font-size:11px}
+@media(min-width:1700px){.kpis{grid-template-columns:repeat(7,1fr)}.kt b{font-size:clamp(17px,1.2vw,22px)}.kt span{font-size:10.5px}}
 </style>
 </head>
 <body>
-<header><h1>📦 Inventory System</h1><span id="syncb" class="tag" style="margin-left:auto"></span><small>Region Property • Laboratory Equipment • Inventory Count Form • Property Stickers</small></header>
+<header><div class="brand"><svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true"><path d="M24 3 42 13v22L24 45 6 35V13z" fill="#e9f7ee"/><path d="M24 3 42 13 24 23 6 13z" fill="#fff"/><path d="M24 23v22L6 35V13z" fill="#2fa564"/><path d="M24 23v22l18-10V13z" fill="#16794a"/><path d="M16 9.5 34 19.5v6" fill="none" stroke="#0b4a34" stroke-width="1.6" stroke-linecap="round"/></svg><h1>Inventory System</h1></div><span id="syncb" class="tag"></span><small><span>Region IV-B</span><span>Laboratory Equipment</span><span>Inventory Count Form</span><span>Property Stickers</span></small></header>
 <nav id="nav"></nav>
 <div id="lg"></div>
 <main id="main"></main>
@@ -2451,10 +2512,30 @@ const pcSel=(arr,v,h)=>`<select onchange="${h}" title="Property Category"><optio
 const fld=(m,k)=>MODS[m].fields.find(f=>f.k===k);
 
 /* ========= NAV ========= */
+const _p=d=>`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICO={dash:_p('<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>'),
+region:_p('<path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M12 12 20 7.5M12 12v9M12 12 4 7.5"/>'),
+lab:_p('<path d="M9 3h6M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7.5 15h9"/>'),
+icf:_p('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM8.5 12h7M8.5 16h7"/>'),
+stk:_p('<path d="M4 6v12M7 6v12M11 6v12M14 6v12M18 6v12M20.5 6v12"/>'),
+master:_p('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'),
+users:_p('<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14.5c2.4 0 4 1.6 4 4"/>'),
+acct:_p('<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"/>'),
+user:_p('<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"/>'),
+xls:_p('<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12l4 5M13 12l-4 5"/>'),
+imp:_p('<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14"/>'),
+out:_p('<path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/>'),
+peso:'<span class="ic pesoi">₱</span>',
+pkg:_p('<path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M12 12 20 7.5M12 12v9M12 12 4 7.5M8 5.3l8 4.5"/>'),
+ok:_p('<circle cx="12" cy="12" r="9"/><path d="m8 12.5 3 3 5-6"/>'),
+bar:_p('<path d="M5 20V10M12 20V4M19 20v-7"/>'),
+pie:_p('<path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>'),
+bulb:_p('<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>')};
+const TABICO={dash:'dash',region:'region',lab:'lab',icf:'icf',stk:'stk',master:'master',users:'users',acct:'acct'};
 const isAdmin=()=>cfg.role==='admin';
 const tabsNow=()=>[['dash','Dashboard'],['region','Region Property'],['lab','Lab Equipment'],['icf','Inventory Count Form'],['stk','Property Stickers'],['master','Master Data'],...(isAdmin()?[['users','Users']]:[]),['acct','My Account']];
-function renderNav(){nav.innerHTML=tabsNow().map(([k,l])=>`<button class="${k===tab?'on':''}" onclick="go('${k}')">${l}</button>`).join('')+
- `<span class="sp"></span><span class="who">👤 ${esc(cfg.user)} (${isAdmin()?'Admin':'Staff – view only'})</span><button class="b" onclick="exportXlsx()">⬇ Export Excel</button>${isAdmin()?`<button class="b" onclick="importPick()">⬆ Import Excel</button><input type="file" id="imp" accept=".xlsx,.xls,.csv" class="hide" onchange="importXlsx(this)">`:''}<button class="b d" onclick="logout()">Log out</button>`}
+function renderNav(){nav.innerHTML=tabsNow().map(([k,l])=>`<button class="${k===tab?'on':''}" onclick="go('${k}')">${ICO[TABICO[k]]||''}<span>${l}</span></button>`).join('')+
+ `<span class="sp"></span><span class="who">${ICO.user}${esc(cfg.user)} (${isAdmin()?'Admin':'Staff – view only'})</span><button class="b nb" onclick="exportXlsx()">${ICO.xls}Export Excel</button>${isAdmin()?`<button class="b nb" onclick="importPick()">${ICO.imp}Import Excel</button><input type="file" id="imp" accept=".xlsx,.xls,.csv" class="hide" onchange="importXlsx(this)">`:''}<button class="b nb lo" onclick="logout()">${ICO.out}Log out</button>`}
 function go(t){tab=t;render()}
 function render(){document.body.classList.toggle('itemmode',tab==='item');renderNav();({dash:vDash,region:()=>vList('region'),lab:()=>vList('lab'),icf:vIcf,stk:vStk,master:vMaster,users:vUsers,acct:vAcct,item:vItem})[tab]();}
 
@@ -2465,17 +2546,22 @@ function vDash(){
  const var_=all.filter(r=>r.physical!==''&&r.physical!=null&&num(r.physical)!==num(r.qty)).length;
  const byC={};all.forEach(r=>{const c=r.condition||'No condition';byC[c]=(byC[c]||0)+1});
  const bySec={};all.forEach(r=>{const c=r.section||'No section';bySec[c]=(bySec[c]||0)+num(r.total)});
- main.innerHTML=`<div class="grid">
- <div class="card stat"><span>Region Property items</span><b>${S.region.length}</b></div>
- <div class="card stat"><span>Lab Equipment items</span><b>${S.lab.length}</b></div>
- <div class="card stat"><span>Total Value (Region)</span><b>${money(tv('region'))}</b></div>
- <div class="card stat"><span>Total Value (Lab)</span><b>${money(tv('lab'))}</b></div>
- <div class="card stat"><span>PPE (₱50,000 up)</span><b>${all.filter(r=>cls(r)==='PPE').length}</b><small style="color:var(--mute)">${money(all.filter(r=>cls(r)==='PPE').reduce((a,r)=>a+num(r.total),0))}</small></div>
- <div class="card stat"><span>ICS (below ₱50,000)</span><b>${all.filter(r=>cls(r)==='ICS').length}</b><small style="color:var(--mute)">${money(all.filter(r=>cls(r)==='ICS').reduce((a,r)=>a+num(r.total),0))}</small></div>
- <div class="card stat"><span>Count variances</span><b style="color:${var_?'var(--bad)':'var(--ok)'}">${var_}</b></div></div>
- <div class="grid"><div class="card"><h3 style="margin-top:0">Per Condition</h3>${Object.keys(byC).length?Object.entries(byC).map(([k,v])=>`<p style="margin:6px 0"><span class="tag ${esc(k.split(' ')[0])}">${esc(k)}</span> &nbsp;<b>${v}</b></p>`).join(''):'<div class="empty">No data yet</div>'}</div>
- <div class="card"><h3 style="margin-top:0">Value per Division / Section</h3>${Object.keys(bySec).length?Object.entries(bySec).map(([k,v])=>`<p style="margin:6px 0">${esc(k)} — <b>${money(v)}</b></p>`).join(''):'<div class="empty">No data yet</div>'}</div></div>
- <div class="card"><b>How to use:</b> 1) Fill in <i>Master Data</i> (dropdown lists). 2) Add items under <i>Region Property</i> or <i>Lab Equipment</i>. 3) Generate the <i>Inventory Count Form</i> and print it. 4) Print the <i>Property Stickers</i>. All data is stored in your Google Sheet. Staff accounts can only view and print.</div>`;
+const nPPE=all.filter(r=>cls(r)==='PPE'),nICS=all.filter(r=>cls(r)==='ICS'),sum=a=>a.reduce((t,r)=>t+num(r.total),0);
+ const kp=(c,ic,l,v,sub)=>`<div class="kpi"><div class="ki ${c}">${ic}</div><div class="kt"><span>${l}</span><b>${v}</b>${sub?`<small>${sub}</small>`:''}</div></div>`;
+ const CC={'not-luotable':'#1fa84f','reconditioned':'#2f6fe4','no-condition':'#f28a1b','no condition':'#f28a1b','rotable':'#157a2f','unserviceable':'#e03131','serviceable':'#1fa84f','unknown':'#8e44d0','unuseable':'#7d8594','others':'#16a6a0','for disposal':'#b7791f'},PAL=['#2f6fe4','#1fa84f','#f28a1b','#8e44d0','#16a6a0','#e03131','#7d8594'];
+ const cc=(k,i)=>CC[String(k).toLowerCase()]||PAL[i%PAL.length];
+ const ph=(ic,t)=>`<div class="ph">${ic}<h3>${t}</h3></div>`;
+ main.innerHTML=`<div class="kpis">
+ ${kp('g1',ICO.region,'Region Property items',S.region.length)}
+ ${kp('b1',ICO.lab,'Lab Equipment items',S.lab.length)}
+ ${kp('t1',ICO.peso,'Total Value (Region)',money(tv('region')))}
+ ${kp('b1',ICO.peso,'Total Value (Lab)',money(tv('lab')))}
+ ${kp('g2',ICO.pkg,'PPE (₱50,000 up)',nPPE.length,money(sum(nPPE)))}
+ ${kp('b2',ICO.stk,'ICS (below ₱50,000)',nICS.length,money(sum(nICS)))}
+ ${kp(var_?'r1':'g3',ICO.ok,'Count variances',var_)}</div>
+ <div class="two"><div class="pnl">${ph(ICO.bar,'Per Condition')}<div class="pb">${Object.keys(byC).length?Object.entries(byC).map(([k,v],i)=>`<div class="crow"><i style="background:${cc(k,i)}"></i><span>${esc(k)}</span><b>${v}</b></div>`).join(''):'<div class="empty">No data yet</div>'}</div></div>
+ <div class="pnl sec">${ph(ICO.pie,'Value per Division / Section')}<div class="pb">${Object.keys(bySec).length?Object.entries(bySec).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`<p class="srow">${esc(k)} <em>—</em> <b>${money(v)}</b></p>`).join(''):'<div class="empty">No data yet</div>'}</div></div></div>
+ <div class="pnl how">${ph(ICO.bulb,'How to use :')}<div class="pb"><ol><li>Fill in <i>Master Data</i> (dropdown lists).</li><li>Add items under <i>Region Property</i> or <i>Lab Equipment</i>.</li><li>Generate the <i>Inventory Count Form</i> and print it.</li><li>Print the <i>Property Stickers</i>.</li></ol><p class="mute">All data is stored in your Google Sheet. Staff accounts can only view and print.</p></div></div>`;
 }
 
 /* ========= LIST ========= */
